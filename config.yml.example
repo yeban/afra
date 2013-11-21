@@ -1,0 +1,6 @@
+# See env.rb for supported variables.
+#
+# database_uri:        "sqlite:////Users/yeban/src/afra/afra.db"
+# session_secret:      "your session secret here"
+# facebook_app_id:     "your facebook app id here"
+# facebook_app_secret: "your facebook app secret here"
