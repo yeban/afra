@@ -1,0 +1,33 @@
+<ng-include src="'templates/_nav.html'"></ng-include>
+<article class="curate">
+  <div class="row">
+    <div class="col-md-10">
+      <div class="wrap">
+        <div class="btn-group-vertical" id="control">
+          <button
+            ng-click="browser.view.zoomIn()"
+            class="btn btn-default">
+            <i class="fa fa-search-plus"></i>
+          </button>
+          <button
+            ng-click="browser.view.zoomOut()"
+            class="btn btn-default">
+            <i class="fa fa-search-minus"></i>
+          </button>
+        </div>
+        <div id="genome"></div>
+        <div id="footer">
+          <button
+            ng-click="done()"
+            class="btn btn-default btn-lg pull-right">
+            <i class="fa fa-lg fa-check-square-o"></i>
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <h3>Checklist here.</h3>
+    </div>
+  </div>
+</article>

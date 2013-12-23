@@ -1,3 +1,7 @@
 Gemfile.lock
 config.yml
 www/lib
+MYMETA.yml
+MYMETA.json
+Makefile
+data

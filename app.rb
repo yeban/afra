@@ -107,6 +107,45 @@ module App
     exit
   end
 
+  def gff2jbrowse(**options)
+    init_config options
+    puts   "Converting GFF to JBrowse ..."
+    system "bin/gff2jbrowse.pl -o data/jbrowse 'data/gene/Solenopsis invicta/Si_gnF.gff'"
+    puts   "Generateing index ..."
+    system "bin/generate-names.pl -o data/jbrowse"
+  end
+
+  def register_features(**options)
+    puts "Registering features ..."
+    init_config options
+    init_db
+    load_models
+    Dir[File.join('data', 'jbrowse', 'tracks', 'maker', '*')].each do |dir|
+      next if dir =~ /^\.+/
+      names = File.readlines File.join(dir, 'names.txt')
+      names.each do |name|
+        name = eval name.chomp
+
+        Feature.create({
+          name:  name[-4],
+          ref:   name[-3],
+          start: name[-2],
+          end:   name[-1]
+        })
+      end
+    end
+  end
+
+  def create_tasks(**options)
+    puts "Creating tasks ..."
+    init_config options
+    init_db
+    load_models
+    Feature.each do |feature|
+      Curation.create(feature: feature)
+    end
+  end
+
   def irb(**options)
     init_config options
     load_models

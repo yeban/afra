@@ -29,7 +29,7 @@ class Auth < App::Routes
         if user.authenticate(password)
           token = AccessToken.generate(user)
           request.session[:token] = token
-          halt user.to_json only: [:id, :name]
+          halt user.to_json only: [:id, :name, :picture, :joined_on]
         end
       end
     end
@@ -89,7 +89,7 @@ class Auth < App::Routes
     content_type 'application/json'
     user = AccessToken.user(request.session[:token])
     halt 401 unless user
-    user.to_json only: [:id, :name]
+    user.to_json only: [:id, :name, :picture, :joined_on]
   end
 
   error KeyError do
