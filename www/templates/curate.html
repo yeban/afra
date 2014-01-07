@@ -26,8 +26,192 @@
         </div>
       </div>
     </div>
-    <div class="col-md-2">
-      <h3>Checklist here.</h3>
+    <div
+      id="checklist"
+      class="col-md-2">
+      <h3>
+        Hints
+      </h3>
+
+      <ul>
+        <li>
+          Select an exon. This will highlight matching edges across all the
+          tracks.Scrolling along the length of the annotation, check the edges
+          of the annotation match with all available EST data.
+          <br>
+          If EST data extends beyond consensus annotation, extend or add UTRs.
+        </li>
+
+        <li>
+          Check if there are ESTs that lack one or more annotated exons or include
+          additional exons:
+          <ul>
+            <li>
+              if all data disagree with the annotation you need to make corrections need to make corrections.
+            </li>
+            <li>
+              if some data support the annotation and some do not, you need to add alternative transcript.
+            </li>
+          </ul>
+        </li>
+
+        <li>
+          Tip 1: Annotate as many alternatives transcripts as are well supported by the
+          data.
+        </li>
+
+        <li>
+          Tip 2: Erring on the side of caution, anything unusual should be supported by
+          at least two pieces of data.
+        </li>
+
+        <li>
+          Look for a yellow arrow-like image superimposed on the end of an
+          exon. These indicate non-canonical splice sites.  Zoom in so that you
+          can see the base pairs. Canonical splice sites are GT and AG.
+
+          <ul>
+            <li>
+              If the splice donor is GC, flag the gene model with an
+              appropriate comment.
+            </li>
+            <li>
+              If the splice donor is GT, but there is an in-frame GC close by,
+              it is likely the correce splice site. Make the necessary
+              correction in the exon detail editor.
+            </li>
+          </ul>
+        </li>
+
+        <li>
+          Note 1: If you have added alternative transcripts, you may have to
+          make a second pass.
+        </li>
+
+        <li>
+          Look for a yellow arrow-like image superimposed on the terminal end
+          of a gene model.
+        </li>
+
+        <li>
+          If evidence supports adding an additional exon, do it.
+        </li>
+
+        <li>
+          If not, resize the exon to the first in-frame stop codon.
+        </li>
+
+        <li>
+          Note 1: Generally the start codon will be in the first or second exon
+          (5’ exons that are entirely UTR are common) and the stop codon will
+          be located within the last exon.
+        </li>
+
+        <li>
+          Look for a yellow arrow-like image superimposed on the first or
+          second exon of a gene model. It means trouble with start codon (ATG).
+        </li>
+
+        <li>
+          If there is no start codon in the correct fram look for a start codon
+          immedieately upstream (maybe in the next upstream exon) and extend
+          exon to incorporate it.
+        </li>
+
+        <li>
+          There is an ATG start in-frame, but it is not the first one in frame
+          for this model (there is no in-frame stop preceding the ATG): In
+          other words, Apollo is flagging the fact that this entire exon may be
+          a “coding exon” and the ATG may not be the correct start codon. In
+          this case check if the true stop appears to be upstream. If not, you
+          can override Apollo by setting the translation start manually (see
+          above).
+        </li>
+
+        <li>
+          A non-canonical start codon has been predicted: in this case the
+          codon will be also highlighted in purple instead of green). In this
+          case, check whether a non-canonical (i.e: non-ATG) start codon is
+          usually present in homologs of this model, and/or check whether this
+          is a likely occurrence in this genome. If you cannot reach a
+          satisfactory answer to this question, you may override Apollo by
+          setting the translation start manually to a canonical ATG start codon
+          (see above), choosing the one that both, most closely reflects what
+          you know about the model, and has the best support from the
+          biological evidence (e.g: EST alignments, etc).
+        </li>
+
+        <li>
+          If any of your manipulations have thrown an exon out of frame or
+          caused any other drastic changes that will immediately show up in
+          Apollo, then the blue protein-coding extent will appear truncated
+          (empty rectangle). This requires correction!
+        </li>
+
+        <li>
+          If the annotation looks good, pull up the protein sequence by
+          selecting the annotation and using the right/apple-click menu option
+          Sequence.  Copy this into a protein BLAST (e.g: NCBI BLAST) and BLAST
+          against the all organisms nr database. If the alignment looks good,
+          note also whether the length of your protein is an approximate match
+          to the best hits.
+        </li>
+
+        <li>
+          Note 1: Hits labeled as “Predictions” are less reliable. Try to find
+          a hit that is not marked as a prediction or as hypothetical model,
+          but is a verified RefSeq model.
+        </li>
+
+        <li>
+          Note 2: While searching on NCBI you may come across a hit to a cDNA
+          for that genome contributed by an individual lab. If this is the
+          case, you should treat this as additional evidence data and should
+          compare it to the entire annotation, including UTR’s.
+        </li>
+
+        <li>
+          If there is a discrepancy in the length distribution of the hits
+          compared to the gene model:
+        </li>
+
+        <li>
+          It is possible that the consensus gene model is missing an exon.
+        </li>
+
+        <li>
+          It is possible that adjacent genes were merged into one. In this
+          case, the gene model will likely have a long intron and the hits will
+          form a cluster ...
+        </li>
+
+        <li>
+          It is possible that one gene was split into two. If this be the case,
+          adjacent gene model will also score high against the same protein.
+        </li>
+
+        <li>
+          More
+          ----
+
+          Consensus prediction ‘reads through’ a small intron (thus two exons have been
+          merged into one).
+
+          Consensus contains an intron where there shouldn’t be any (thus an exon is
+          split in two)
+
+          BLASTN with cDNA evidence
+
+          Could in fact be a pseudogene.
+
+          Alternative splicing not taken into account
+
+          Overlapping genes
+        </li>
+
+      </ul>
+
+
     </div>
   </div>
   <div class="modal fade" id="thanks">
