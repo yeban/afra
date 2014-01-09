@@ -45,6 +45,10 @@ module App
     def serve(app)
       self.app = app
       binder.parse binds, events
+      if App.config[:daemonize]
+        events.log "* Daemonizing ..."
+        Process.daemon(true)
+      end
       run.join
     rescue Interrupt
       # swallow it
@@ -154,7 +158,7 @@ module App
   end
 
   def serve(**options)
-    init_config options
+    init_config config: options
     load_models
     load_routes
     init_server
