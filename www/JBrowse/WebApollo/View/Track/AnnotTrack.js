@@ -349,8 +349,11 @@ var AnnotTrack = declare(DraggableFeatureTrack,
                             console.log("right edge delta bases: " + rightDeltaBases);
                         }
                         var subfeat = ui.originalElement[0].subfeature;
-                        subfeat[1] = subfeat[1] + leftDeltaBases;
-                        subfeat[2] = subfeat[2] + leftDeltaBases;
+                        var fmin = subfeat.get('start') + leftDeltaBases;
+                        var fmax = subfeat.get('end') + rightDeltaBases;
+                        subfeat[1] = fmin;
+                        subfeat[2] = fmax;
+                        track.changed()
                     }
                 });
             }
