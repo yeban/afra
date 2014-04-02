@@ -5,7 +5,6 @@ define([
             'jqueryui/droppable',
             'jqueryui/resizable',
             'contextmenu',
-            'dijit/MenuItem',
             'JBrowse/View/Track/DraggableHTMLFeatures',
             'JBrowse/FeatureSelectionManager',
             'JBrowse/BioFeatureUtils',
@@ -20,7 +19,6 @@ define([
                  droppable,
                  resizable,
                  contextmenu,
-                 dijitMenuItem,
                  DraggableFeatureTrack,
                  FeatureSelectionManager,
                  BioFeatureUtils,
@@ -82,12 +80,6 @@ var EditTrack = declare(DraggableFeatureTrack,
         if (featDiv && featDiv != null)  {
             $(featDiv).contextmenu({
                 target: '#contextmenu'
-                //onItem: function (event, element) {
-                    //var selection = track.selectionManager.getSelectedFeatures();
-                    //var action = element.data('action');
-                    //track[action].call(track, selection, event);
-                    //track.selectionManager.clearSelection();
-                //}
             })
         }
         return featDiv;
@@ -136,37 +128,33 @@ var EditTrack = declare(DraggableFeatureTrack,
                     grid: gridvals,
 
                     stop: function(event, ui)  {
-                        var gview = track.gview;
-                        var oldPos = ui.originalPosition;
-                        var newPos = ui.position;
-                        var oldSize = ui.originalSize;
-                        var newSize = ui.size;
-                        var leftDeltaPixels = newPos.left - oldPos.left;
-                        var leftDeltaBases = Math.round(gview.pxToBp(leftDeltaPixels));
-                        var oldRightEdge = oldPos.left + oldSize.width;
-                        var newRightEdge = newPos.left + newSize.width;
-                        var rightDeltaPixels = newRightEdge - oldRightEdge;
-                        var rightDeltaBases = Math.round(gview.pxToBp(rightDeltaPixels));
-                        var subfeat = ui.originalElement[0].subfeature;
-                        var parent  = subfeat.parent();
-                        var subfeatures = parent.get('subfeatures');
-                        var subfeatid;
+                        var exon      = ui.originalElement[0].subfeature;
+                        var parent    = exon.parent();
+                        var children  = parent.children();
+                        var exonIndex = _.indexOf(children, exon);
+                        var leftExon  = _.find(children.slice().reverse(), function (f) {
+                            return f.get('end') < exon.get('start') && f.get('type') === 'exon';
+                        });
+                        var rightExon = _.find(children, function (f) {
+                            return f.get('start') > exon.get('end') && f.get('type') === 'exon';
+                        });
 
-                        for (var i in subfeatures) {
-                            if (subfeatures[i].id() == subfeat.id()) {
-                                subfeatid = i;
-                            }
-                        };
-                        track.resizeExon(parent, subfeatid, leftDeltaBases, rightDeltaBases);
-                        //subfeat[1] = subfeat[1] + leftDeltaBases;
-                        //subfeat[2] = subfeat[2] + leftDeltaBases;
-                        //console.log(track.store.features);
-                        //console.log(parent);
-                        //var new_feature = track.newTranscript(parent);
-                        ////var new_feature = track.create_annotation(parent);
-                        //track.store.replace(new_feature);
-                        //console.log(track.store.features);
-                        //track.changed();
+                        var leftDeltaPixels  = ui.position.left - ui.originalPosition.left;
+                        var rightDeltaPixels = ui.position.left + ui.size.width - ui.originalPosition.left - ui.originalSize.width;
+                        var leftDeltaBases   = Math.round(track.gview.pxToBp(leftDeltaPixels));
+                        var rightDeltaBases  = Math.round(track.gview.pxToBp(rightDeltaPixels));
+
+                        if (leftExon && (exon.get('start') + leftDeltaBases) <= leftExon.get('end')) {
+                            console.log('merge this and the one before');
+                            track.mergeExons(parent, leftExon, exon);
+                        }
+                        else if (rightExon && (exon.get('end') + rightDeltaBases) >= rightExon.get('start')) {
+                            console.log('merge this and the one after');
+                            track.mergeExons(parent, exon, rightExon);
+                        }
+                        else {
+                            track.resizeExon(parent, exonIndex, leftDeltaBases, rightDeltaBases);
+                        }
                     }
                 });
             }
@@ -208,9 +196,10 @@ var EditTrack = declare(DraggableFeatureTrack,
 
     addTranscript: function (transcript) {
         var new_transcript = this.newTranscript(transcript);
-        //this.store.insert(new_transcript);
-        //this.changed();
-        this.findNonCanonicalSpliceSites(new_transcript);
+        this.markNonCanonicalSpliceSites(new_transcript, function () {
+            this.store.insert(new_transcript);
+            this.changed();
+        });
     },
 
     addExon: function (exon) {
@@ -247,11 +236,44 @@ var EditTrack = declare(DraggableFeatureTrack,
             new_transcript.set('end', fmax);
         }
 
-        //this.store.replace(new_transcript);
-        //this.changed();
-        this.findNonCanonicalSpliceSites(new_transcript);
+        this.markNonCanonicalSpliceSites(new_transcript, function () {
+            this.store.replace(new_transcript);
+            this.changed();
+        });
 
         var featdiv = this.getFeatDiv(exon);
+        $(featdiv).trigger('mousedown');
+    },
+
+    mergeExons: function(transcript, leftExon, rightExon) {
+        var new_transcript = new SimpleFeature({
+            id:   transcript.id(),
+            data: {
+                name:   transcript.get('name'),
+                ref:    transcript.get('seq_id') || transcript.get('ref'),
+                start:  transcript.get('start'),
+                end:    transcript.get('end'),
+                strand: transcript.get('strand')
+            }
+        });
+        var subfeatures = _.reject(transcript.children(), function (f) {
+            return f.id() == leftExon.id() || f.id() == rightExon.id();
+        });
+        var new_exon    = new SimpleFeature({
+            data: {
+                start: leftExon.get('start'),
+                end:   rightExon.get('end'),
+                strand: leftExon.get('strand'),
+                type:   leftExon.get('type')
+            },
+            parent: new_transcript
+        });
+        subfeatures.push(new_exon);
+        subfeatures = this.sortAnnotationsByLocation(subfeatures);
+        new_transcript.set('subfeatures', subfeatures);
+        this.store.replace(new_transcript);
+        this.changed();
+        var featdiv = this.getFeatDiv(new_exon);
         $(featdiv).trigger('mousedown');
     },
 
@@ -293,27 +315,6 @@ var EditTrack = declare(DraggableFeatureTrack,
         }
         //console.log(feature);
         return feature;
-    },
-
-    /* feature_records ==> { feature: the_feature, track: track_feature_is_from } */
-    addToAnnotation: function(annot, feature_records)  {
-        var new_transcript = this.newTranscript(annot);
-        var from_feature = feature_records[0].feature;
-        var feature = new SimpleFeature({
-            data: {
-                start:  from_feature.get('start'),
-                end:    from_feature.get('end'),
-                strand: from_feature.get('strand'),
-                type:   from_feature.get('type')
-            },
-            parent: new_transcript
-        });
-        var subfeatures = new_transcript.get('subfeatures');
-        subfeatures.push(feature);
-        new_transcript.set('subfeatures', subfeatures);
-        this.store.deleteFeatureById(annot.id());
-        this.store.insert(new_transcript);
-        this.changed();
     },
 
     duplicateSelectedFeatures: function() {
@@ -415,12 +416,7 @@ var EditTrack = declare(DraggableFeatureTrack,
 
     mergeSelectedFeatures: function()  {
         var selected = this.selectionManager.getSelectedFeatures();
-        this.selectionManager.clearSelection();
-        this.mergeFeatures(selected);
-    },
-
-    mergeFeatures: function(selection) {
-        var sortedAnnots = this.sortAnnotationsByLocation(selection);
+        var sortedAnnots = this.sortAnnotationsByLocation(selected);
         var leftAnnot = sortedAnnots[0];
         var rightAnnot = sortedAnnots[sortedAnnots.length - 1];
         var trackName = this.getUniqueTrackName();
@@ -442,64 +438,38 @@ var EditTrack = declare(DraggableFeatureTrack,
         }
         */
 
-        var features;
-        var operation;
-        // merge exons
         if (leftAnnot.parent() && rightAnnot.parent() && leftAnnot.parent() == rightAnnot.parent()) {
-            var parent = leftAnnot.parent();
-            var new_transcript = new SimpleFeature({
-                id:   parent.id(),
-                data: {
-                    name:   parent.get('name'),
-                    ref:    parent.get('seq_id') || parent.get('ref'),
-                    start:  parent.get('start'),
-                    end:    parent.get('end'),
-                    strand: parent.get('strand')
-                }
-            });
-            var subfeatures = _.reject(parent.children(), function (f) {
-                return f.id() == leftAnnot.id() || f.id() == rightAnnot.id();
-            });
-            subfeatures.push(new SimpleFeature({
-                data: {
-                    start: leftAnnot.get('start'),
-                    end:   rightAnnot.get('end'),
-                    strand: leftAnnot.get('strand'),
-                    type:   leftAnnot.get('type')
-                },
-                parent: new_transcript
-            }));
-            subfeatures = this.sortAnnotationsByLocation(subfeatures);
-            new_transcript.set('subfeatures', subfeatures);
-            this.store.replace(new_transcript);
-            this.changed();
+            this.mergeExons(leftAnnot.parent(), leftAnnot, rightAnnot);
         }
-        // merge transcripts
         else {
-            console.log('merge transcripts');
-            if (leftAnnot.parent())
-                leftAnnot = leftAnnot.parent();
-
-            if (rightAnnot.parent())
-                rightAnnot = rightAnnot.parent();
-
-            var new_transcript = new SimpleFeature({
-                data: {
-                    name: leftAnnot.get('name'),
-                    ref:  leftAnnot.get('ref'),
-                    start: leftAnnot.get('start'),
-                    end:   rightAnnot.get('end'),
-                    strand: leftAnnot.get('strand'),
-                    type:   leftAnnot.get('type')
-                }
-            });
-            var subfeatures = leftAnnot.children();
-            subfeatures = subfeatures.concat(rightAnnot.children());
-            new_transcript.set('subfeatures', subfeatures);
-            this.store.deleteFeatureById(leftAnnot.id());
-            this.store.insert(new_transcript);
-            this.changed();
+            this.mergeTranscripts(leftAnnot, rightAnnot);
         }
+        this.selectionManager.clearSelection();
+    },
+
+    mergeTranscripts: function(leftTranscript, rightTranscript) {
+        if (leftTranscript.parent())
+            leftTranscript = leftTranscript.parent();
+
+        if (rightTranscript.parent())
+            rightTranscript = rightTranscript.parent();
+
+        var new_transcript = new SimpleFeature({
+            data: {
+                name: leftTranscript.get('name'),
+                ref:  leftTranscript.get('ref'),
+                start: leftTranscript.get('start'),
+                end:   rightTranscript.get('end'),
+                strand: leftTranscript.get('strand'),
+                type:   leftTranscript.get('type')
+            }
+        });
+        var subfeatures = leftTranscript.children();
+        subfeatures = subfeatures.concat(rightTranscript.children());
+        new_transcript.set('subfeatures', subfeatures);
+        this.store.deleteFeatureById(leftTranscript.id());
+        this.store.insert(new_transcript);
+        this.changed();
     },
 
     splitSelectedFeatures: function()  {
@@ -621,29 +591,8 @@ var EditTrack = declare(DraggableFeatureTrack,
         }
     },
 
-    makeIntron: function(event)  {
-        var selected = this.selectionManager.getSelection();
-        this.selectionManager.clearSelection();
-        this.makeIntronInExon(selected, event);
-    },
-
-    makeIntronInExon: function(records, event) {
-        if (records.length > 1) {
-            return;
-        }
-        var track = this;
-        var annot = records[0].feature;
-        var coordinate = this.getGenomeCoord(event);
-        var features = '"features": [ { "uniquename": "' + annot.id() + '", "location": { "fmin": ' + coordinate + ' } } ]';
-        var operation = "make_intron";
-        var trackName = track.getUniqueTrackName();
-        var postData = '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '" }';
-        track.executeUpdateOperation(postData);
-    },
-
     setTranslationStart: function(event)  {
-        // var selected = this.selectionManager.getSelection();
-	var selfeats = this.selectionManager.getSelectedFeatures();
+        var selfeats = this.selectionManager.getSelectedFeatures();
         this.selectionManager.clearSelection();
         this.setTranslationStartInCDS(selfeats, event);
     },
@@ -654,8 +603,6 @@ var EditTrack = declare(DraggableFeatureTrack,
     	}
     	var track = this;
     	var annot = annots[0];
-    	// var coordinate = this.gview.getGenomeCoord(event);
-//  	var coordinate = Math.floor(this.gview.absXtoBp(event.pageX));
     	var coordinate = this.getGenomeCoord(event);
     	console.log("called setTranslationStartInCDS to: " + coordinate);
 
@@ -748,7 +695,7 @@ var EditTrack = declare(DraggableFeatureTrack,
     getSequenceForSelectedFeatures: function(records) {
     },
 
-    findNonCanonicalSpliceSites: function (feature) {
+    markNonCanonicalSpliceSites: function (feature, callback) {
         var track = this;
         this.browser.getStore('refseqs', dojo.hitch(this, function(refSeqStore) {
             if (refSeqStore) {
@@ -794,8 +741,7 @@ var EditTrack = declare(DraggableFeatureTrack,
                         }
                         track.sortAnnotationsByLocation(subfeatures);
                         feature.set('subfeatures', subfeatures);
-                        track.store.insert(feature);
-                        track.changed();
+                        callback.apply(track, feature);
                     }));
             }
         }));
@@ -838,16 +784,15 @@ var EditTrack = declare(DraggableFeatureTrack,
     },
 
     updateMenu: function() {
-        this.updateSetTranslationStartMenuItem();
+        //this.updateSetTranslationStartMenuItem();
         this.updateMergeMenuItem();
         this.updateSplitMenuItem();
-        this.updateMakeIntronMenuItem();
-        this.updateFlipStrandMenuItem();
-        this.updateEditCommentsMenuItem();
-        this.updateEditDbxrefsMenuItem();
-        this.updateUndoMenuItem();
-        this.updateRedoMenuItem();
-        this.updateZoomToBaseLevelMenuItem();
+        //this.updateMakeIntronMenuItem();
+        //this.updateEditCommentsMenuItem();
+        //this.updateEditDbxrefsMenuItem();
+        //this.updateUndoMenuItem();
+        //this.updateRedoMenuItem();
+        //this.updateZoomToBaseLevelMenuItem();
         this.updateDuplicateMenuItem();
     },
 
@@ -872,43 +817,37 @@ var EditTrack = declare(DraggableFeatureTrack,
     },
 
     updateMergeMenuItem: function() {
-        var menuItem = this.getMenuItem("merge");
+        var menuItem = $('#contextmenu-merge');
         var selected = this.selectionManager.getSelection();
         if (selected.length < 2) {
-            menuItem.set("disabled", true);
-            // menuItem.domNode.style.display = "none";  // direct method for hiding menuitem
-            // $(menuItem.domNode).hide();   // probably better method for hiding menuitem
+            menuItem.addClass('disabled')
             return;
-        }
-        else  {
-            // menuItem.domNode.style.display = "";  // direct method for unhiding menuitem
-            // $(menuItem.domNode).show();  // probably better method for unhiding menuitem
         }
         var strand = selected[0].feature.get('strand');
         for (var i = 1; i < selected.length; ++i) {
             if (selected[i].feature.get('strand') != strand) {
-                    menuItem.set("disabled", true);
+                    menuItem.addClass('disabled')
                     return;
             }
         }
-        menuItem.set("disabled", false);
+        menuItem.removeClass('disabled');
     },
 
     updateSplitMenuItem: function() {
-        var menuItem = this.getMenuItem("split");
+        var menuItem = $('#contextmenu-split');
         var selected = this.selectionManager.getSelection();
         if (selected.length > 2) {
-            menuItem.set("disabled", true);
+            menuItem.addClass('disabled')
             return;
         }
         var parent = selected[0].feature.parent();
         for (var i = 1; i < selected.length; ++i) {
             if (selected[i].feature.parent() != parent) {
-                menuItem.set("disabled", true);
+                menuItem.addClass('disabled')
                 return;
             }
         }
-        menuItem.set("disabled", false);
+        menuItem.removeClass('disabled');
     },
 
     updateMakeIntronMenuItem: function() {
@@ -919,10 +858,6 @@ var EditTrack = declare(DraggableFeatureTrack,
             return;
         }
         menuItem.set("disabled", false);
-    },
-
-    updateFlipStrandMenuItem: function() {
-        var menuItem = this.getMenuItem("flip_strand");
     },
 
     updateEditCommentsMenuItem: function() {
@@ -973,14 +908,14 @@ var EditTrack = declare(DraggableFeatureTrack,
 
 
     updateHistoryMenuItem: function() {
-	var menuItem = this.getMenuItem("history");
-	var selected = this.selectionManager.getSelection();
-	if (selected.length > 1) {
-    	    menuItem.set("disabled", true);
-    	    return;
-	}
-	menuItem.set("disabled", false);
-    }, 
+        var menuItem = this.getMenuItem("history");
+        var selected = this.selectionManager.getSelection();
+        if (selected.length > 1) {
+            menuItem.set("disabled", true);
+            return;
+        }
+        menuItem.set("disabled", false);
+    },
 
     updateZoomToBaseLevelMenuItem: function() {
         var menuItem = this.getMenuItem("zoom_to_base_level");
@@ -993,16 +928,16 @@ var EditTrack = declare(DraggableFeatureTrack,
     },
 
     updateDuplicateMenuItem: function() {
-        var menuItem = this.getMenuItem("duplicate");
+        var menuItem = $('contextmenu-duplicate');
         var selected = this.selectionManager.getSelection();
         var parent = EditTrack.getTopLevelAnnotation(selected[0].feature);
         for (var i = 1; i < selected.length; ++i) {
             if (EditTrack.getTopLevelAnnotation(selected[i].feature) != parent) {
-                menuItem.set("disabled", true);
+                menuItem.addClass('disabled')
                 return;
             }
         }
-        menuItem.set("disabled", false);
+        menuItem.removeClass('disabled')
     },
 
     sortAnnotationsByLocation: function(annots) {
@@ -1036,10 +971,9 @@ var EditTrack = declare(DraggableFeatureTrack,
             var scale = track.gview.bpToPx(1);
             var charSize = this.sequenceTrack.getCharacterMeasurements();
             if (scale >= charSize.w && track.useResiduesOverlay)  {
-                var seqTrack = this.browser.getSequenceTrack();
                 for (var bindex = this.firstAttached; bindex <= this.lastAttached; bindex++)  {
                     var block = this.blocks[bindex];
-                    seqTrack.store.getFeatures(
+                    this.sequenceTrack.store.getFeatures(
                         {ref: this.refSeq.name, start: block.startBase, end: block.endBase},
                         function(feat) {
                             var seq = feat.get('seq');
@@ -1066,6 +1000,7 @@ var EditTrack = declare(DraggableFeatureTrack,
                 }
             }
         }
+        this.updateMenu();
     },
 
     selectionRemoved: function(selected_record, smanager)  {
