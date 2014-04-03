@@ -1,10 +1,14 @@
-Afra
-====
+#Afra [![Build Status](http://drone.bionode.io/github.com/bmpvieira/afra/status.png?branch=master)](http://drone.bionode.io/github.com/bmpvieira/afra)
 > Crowdsourcing platform for gene annotation
 
-Install and Run using Docker
-----------------------------
+Run using Docker image from registry
+------------------------------------
+```sh
+docker run -i -t -p 9292:9292 bmpvieira/afra
+```
 
+Run using Docker image locally built
+------------------------------------
 ```sh
 docker build -t afra .
 docker run -i -t -p 9292:9292 afra
@@ -100,8 +104,8 @@ Copy `env.yml.example` and set `facebook_app_id` and `facebook_app_secret` and `
 Contacts
 --------
 Anurag Priyam <[anurag08priyam@gmail.com]>(mailto:anurag08priyam@gmail.com) [@yeban](//twitter.com/yeban)  
-Yannick Wurm ([yannick.poulet.org](http://yannick.poulet.org)) [@yannick__](//twitter.com/yannick__)  
-Bruno Vieira <[mail@bmpvieira.com](mailto:mail@bmpvieira.com)> [@bmpvieira](//twitter.com/bmpvieira)
+Bruno Vieira <[mail@bmpvieira.com](mailto:mail@bmpvieira.com)> [@bmpvieira](//twitter.com/bmpvieira)  
+Yannick Wurm ([yannick.poulet.org](http://yannick.poulet.org)) [@yannick__](//twitter.com/yannick__)
 
 License
 -------
