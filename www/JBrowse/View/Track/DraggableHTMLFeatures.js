@@ -712,7 +712,10 @@ var draggableTrack = declare( HTMLFeatureTrack,
        var parent_selected  = this.selectionManager.isSelected({feature: feature.parent(), track: this});
 
        if (event.shiftKey)  {
-           if (!already_selected) {
+           if (already_selected) {
+               this.selectionManager.removeFromSelection( { feature: feature, track: this });
+           }
+           else {
                // children are auto-deselected by selection manager when parent is selected
                this.selectionManager.addToSelection({feature: feature, track: this}, true);
            }
