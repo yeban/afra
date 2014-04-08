@@ -145,11 +145,9 @@ var EditTrack = declare(DraggableFeatureTrack,
                         var rightDeltaBases  = Math.round(track.gview.pxToBp(rightDeltaPixels));
 
                         if (leftExon && (exon.get('start') + leftDeltaBases) <= leftExon.get('end')) {
-                            console.log('merge this and the one before');
                             track.mergeExons(parent, leftExon, exon);
                         }
                         else if (rightExon && (exon.get('end') + rightDeltaBases) >= rightExon.get('start')) {
-                            console.log('merge this and the one after');
                             track.mergeExons(parent, exon, rightExon);
                         }
                         else {
@@ -174,20 +172,18 @@ var EditTrack = declare(DraggableFeatureTrack,
     },
 
     makeTrackDroppable: function() {
-        var target_track = this;
-        var target_trackdiv = target_track.div;
-
-        $(target_trackdiv).droppable(  {
+        var track = this;
+        $(this.div).droppable(  {
             accept: ".selected-feature",
             drop: function(event, ui)  {
-                var dropped_feats = target_track.browser.featSelectionManager.getSelection();
-                for (var i in dropped_feats)  {
-                    var top_level_feature = !dropped_feats[i].feature.parent();
+                var features = track.browser.featSelectionManager.getSelectedFeatures();
+                for (var i in features)  {
+                    var top_level_feature = !features[i].parent();
                     if (top_level_feature) {
-                        target_track.addTranscript(dropped_feats[i].feature);
+                        track.addTranscript(features[i]);
                     }
                     else {
-                        target_track.addExon(dropped_feats[i].feature);
+                        track.addExon(features[i]);
                     }
                 }
             }
@@ -203,16 +199,40 @@ var EditTrack = declare(DraggableFeatureTrack,
     },
 
     addExon: function (exon) {
-        var new_transcript = this.newTranscript(exon);
-        var parent = exon.parent();
-        var subfeatures = parent.get('subfeatures');
-        var subfeatures_i = new Array();
-        for (var j in subfeatures) {
-            if (subfeatures[j].get('start') >= exon.get('start') && subfeatures[j].get('end') <= exon.get('end')) {
-                subfeatures_i.push(subfeatures[j]);
+        // When an exon is dragged to the edit track, we need to copy the
+        // underlying CDS feature to the edit track as well.
+        var features_to_add = _.select(exon.parent().children(), function (f) {
+            if (f.get('start') >= exon.get('start') &&
+                f.get('end') <= exon.get('end')) {
+                return f;
             }
-        }
-        new_transcript.set('subfeatures', subfeatures_i);
+        });
+        features_to_add_sorted =
+            this.sortAnnotationsByLocation(features_to_add);
+
+        var new_transcript = new SimpleFeature({
+            data: {
+                name:  features_to_add_sorted[0].get('name'),
+                ref:   features_to_add_sorted[0].get('ref'),
+                start: features_to_add_sorted[0].get('start'),
+                end:   features_to_add_sorted[features_to_add_sorted.length - 1].get('end'),
+                strand: features_to_add_sorted[0].get('strand')
+            }
+        });
+        var subfeatures = _.map(features_to_add_sorted, function (f) {
+            return new SimpleFeature({
+                data: {
+                    name:  f.get('name'),
+                    ref:   f.get('ref'),
+                    start: f.get('start'),
+                    end:   f.get('end'),
+                    type:  f.get('type'),
+                    strand: f.get('strand')
+                },
+                parent: new_transcript
+            });
+        });
+        new_transcript.set('subfeatures', subfeatures);
         this.store.insert(new_transcript);
         this.changed();
     },
@@ -419,7 +439,7 @@ var EditTrack = declare(DraggableFeatureTrack,
         var sortedAnnots = this.sortAnnotationsByLocation(selected);
         var leftAnnot = sortedAnnots[0];
         var rightAnnot = sortedAnnots[sortedAnnots.length - 1];
-        var trackName = this.getUniqueTrackName();
+        //var trackName = this.getUniqueTrackName();
 
         /*
         for (var i in annots)  {
@@ -467,128 +487,109 @@ var EditTrack = declare(DraggableFeatureTrack,
         var subfeatures = leftTranscript.children();
         subfeatures = subfeatures.concat(rightTranscript.children());
         new_transcript.set('subfeatures', subfeatures);
-        this.store.deleteFeatureById(leftTranscript.id());
-        this.store.insert(new_transcript);
+        this.markNonCanonicalSpliceSites(new_transcript, function () {
+            this.store.deleteFeatureById(leftTranscript.id());
+            this.store.deleteFeatureById(rightTranscript.id());
+            this.store.insert(new_transcript);
+            this.changed();
+        });
+    },
+
+    splitSelectedTranscript: function ()  {
+        var transcript = this.selectionManager.getSelectedFeatures()[0];
+        var coordinate = this.gview.absXtoBp($('#contextmenu').position().left);
+        this.splitTranscript(transcript, coordinate);
+        this.selectionManager.clearSelection();
+    },
+
+    makeIntronInSelectedExon: function () {
+        var exon = this.selectionManager.getSelectedFeatures()[0];
+        var coordinate = this.gview.absXtoBp($('#contextmenu').position().left);
+        this.makeIntron(exon.parent(), exon, coordinate);
+        this.selectionManager.clearSelection();
+    },
+
+    makeIntron: function(transcript, exon, coordinate) {
+        var feature = new SimpleFeature({
+            id:   transcript.id(),
+            data: {
+                name:   transcript.get('name'),
+                ref:    transcript.get('seq_id') || transcript.get('ref'),
+                start:  transcript.get('start'),
+                end:    transcript.get('end'),
+                strand: transcript.get('strand')
+            }
+        });
+        var subfeatures = _.reject(transcript.get('subfeatures'), function (f) {
+            return f.id() == exon.id();
+        });
+        subfeatures.push(new SimpleFeature({
+            data: {
+                start:  exon.get('start'),
+                end:    coordinate - 10,
+                strand: exon.get('strand'),
+                type:   exon.get('type')
+            },
+            parent: feature
+        }));
+        subfeatures.push(new SimpleFeature({
+            data: {
+                start:  coordinate + 10,
+                end:    exon.get('end'),
+                strand: exon.get('strand'),
+                type:   exon.get('type')
+            },
+            parent: feature
+        }));
+        subfeatures = this.sortAnnotationsByLocation(subfeatures);
+        feature.set('subfeatures', subfeatures);
+        this.store.replace(feature);
         this.changed();
     },
 
-    splitSelectedFeatures: function()  {
-        var selected = this.selectionManager.getSelectedFeatures();
-        this.selectionManager.clearSelection();
-        this.splitFeatures(selected);
-    },
-
-    splitFeatures: function(annots) {
-        // can only split on max two elements
-        if( annots.length > 2 ) {
-            return;
-        }
-        var track = this;
-        var sortedAnnots = track.sortAnnotationsByLocation(annots);
-        var leftAnnot = sortedAnnots[0];
-        var rightAnnot = sortedAnnots[sortedAnnots.length - 1];
-        var trackName = track.getUniqueTrackName();
-
-        /*
-        for (var i in annots)  {
-            var annot = annots[i];
-            // just checking to ensure that all features in selection are from this track --
-            //   if not, then don't try and delete them
-            if (annot.track === track)  {
-                var trackName = track.getUniqueTrackName();
-                if (leftAnnot == null || annot[track.fields["start"]] < leftAnnot[track.fields["start"]]) {
-                    leftAnnot = annot;
-                }
-                if (rightAnnot == null || annot[track.fields["end"]] > rightAnnot[track.fields["end"]]) {
-                    rightAnnot = annot;
-                }
+    splitTranscript: function (transcript, coordinate) {
+        var children  = transcript.children();
+        var leftExon  = _.find(children.slice().reverse(), function (f) {
+            return f.get('end') < coordinate && f.get('type') === 'exon';
+        });
+        var rightExon = _.find(children, function (f) {
+            return f.get('start') > coordinate && f.get('type') === 'exon';
+        });
+        var feature1 = new SimpleFeature({
+            data: {
+                name:   transcript.get('name'),
+                ref:    transcript.get('seq_id') || transcript.get('ref'),
+                start:  transcript.get('start'),
+                end:    leftExon.get('end'),
+                strand: transcript.get('strand')
             }
-        }
-        */
-        var features;
-        var operation;
-        // split exon
-        if (leftAnnot == rightAnnot) {
-            var coordinate = this.gview.absXtoBp($('#contextmenu').position().left);
-            var parent = leftAnnot.parent();
-            var feature = new SimpleFeature({
-                id:   parent.id(),
-                data: {
-                    name:   parent.get('name'),
-                    ref:    parent.get('seq_id') || parent.get('ref'),
-                    start:  parent.get('start'),
-                    end:    parent.get('end'),
-                    strand: parent.get('strand')
-                }
-            });
-            var subfeatures = _.reject(parent.get('subfeatures'), function (f) {
-                return f.id() == leftAnnot.id();
-            });
-            subfeatures.push(new SimpleFeature({
-                data: {
-                    start:  leftAnnot.get('start'),
-                    end:    coordinate - 10,
-                    strand: leftAnnot.get('strand'),
-                    type:   leftAnnot.get('type')
-                },
-                parent: feature
-            }));
-            subfeatures.push(new SimpleFeature({
-                data: {
-                    start:  coordinate + 10,
-                    end:    leftAnnot.get('end'),
-                    strand: leftAnnot.get('strand'),
-                    type:   leftAnnot.get('type')
-                },
-                parent: feature
-            }));
-            subfeatures = this.sortAnnotationsByLocation(subfeatures);
-            feature.set('subfeatures', subfeatures);
-            this.store.replace(feature);
-            this.changed();
-        }
-        // split transcript
-        else if (leftAnnot.parent() == rightAnnot.parent()) {
-            var parent = leftAnnot.parent();
-            var feature1 = new SimpleFeature({
-                data: {
-                    name:   parent.get('name'),
-                    ref:    parent.get('seq_id') || parent.get('ref'),
-                    start:  parent.get('start'),
-                    end:    leftAnnot.get('end'),
-                    strand: parent.get('strand')
-                }
-            });
-            var feature2 = new SimpleFeature({
-                data: {
-                    name:   parent.get('name'),
-                    ref:    parent.get('seq_id') || parent.get('ref'),
-                    start:  rightAnnot.get('start'),
-                    end:    parent.get('end'),
-                    strand: parent.get('strand')
-                }
-            });
-            var splitPoint   = false;
-            var subfeatures1 = [];
-            var subfeatures2 = [];
-            _.each(parent.children(), function (f) {
-                if (f.id() == rightAnnot.id())
-                    splitPoint = true;
-                if (!splitPoint)
-                    subfeatures1.push(f)
-                else
-                    subfeatures2.push(f);
-            });
-            feature1.set('subfeatures', subfeatures1);
-            feature2.set('subfeatures', subfeatures2);
-            this.store.deleteFeatureById(parent.id());
-            this.store.insert(feature1);
-            this.store.insert(feature2);
-            this.changed();
-        }
-        else {
-            return;
-        }
+        });
+        var feature2 = new SimpleFeature({
+            data: {
+                name:   transcript.get('name'),
+                ref:    transcript.get('seq_id') || transcript.get('ref'),
+                start:  rightExon.get('start'),
+                end:    transcript.get('end'),
+                strand: transcript.get('strand')
+            }
+        });
+        var splitPoint   = false;
+        var subfeatures1 = [];
+        var subfeatures2 = [];
+        _.each(children, function (f) {
+            if (f.id() == rightExon.id())
+                splitPoint = true;
+            if (!splitPoint)
+                subfeatures1.push(f)
+            else
+                subfeatures2.push(f);
+        });
+        feature1.set('subfeatures', subfeatures1);
+        feature2.set('subfeatures', subfeatures2);
+        this.store.deleteFeatureById(transcript.id());
+        this.store.insert(feature1);
+        this.store.insert(feature2);
+        this.changed();
     },
 
     setTranslationStart: function(event)  {

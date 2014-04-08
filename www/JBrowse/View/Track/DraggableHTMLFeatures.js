@@ -701,61 +701,37 @@ var draggableTrack = declare( HTMLFeatureTrack,
     },
 
    handleFeatureSelection: function( event )  {
-       var ftrack = this;
-       var selman = ftrack.selectionManager;
-       var featdiv = (event.currentTarget || event.srcElement);
-       var feat = featdiv.feature || featdiv.subfeature;
+       var feature_div = (event.currentTarget || event.srcElement);
+       var feature = feature_div.feature || feature_div.subfeature;
 
-       if( selman.unselectableTypes[feat.get('type')] ) {
+       if (this.selectionManager.unselectableTypes[feature.get('type')]) {
            return;
        }
 
-       var already_selected = selman.isSelected( { feature: feat, track: ftrack } );
-       var parent_selected = false;
-       var parent = feat.parent();
-       if (parent)  {
-           parent_selected = selman.isSelected( { feature: parent, track: ftrack } );
-       }
-       // if parent is selected, allow propagation of event up to parent,
-       //    in order to ensure parent draggable setup and triggering
-       // otherwise stop propagation
-       if (! parent_selected)  {
-           event.stopPropagation();
-       }
+       var already_selected = this.selectionManager.isSelected({feature: feature, track: this});
+       var parent_selected  = this.selectionManager.isSelected({feature: feature.parent(), track: this});
+
        if (event.shiftKey)  {
-           if (already_selected) {  // if shift-mouse-down and this already selected, deselect this
-               selman.removeFromSelection( { feature: feat, track: this });
+           if (already_selected) {
+               this.selectionManager.removeFromSelection( { feature: feature, track: this });
            }
-           else if (parent_selected)  {
-               // if shift-mouse-down and parent selected, do nothing --
-               //   event will get propagated up to parent, where parent will get deselected...
-               // selman.removeFromSelection(parent);
-           }
-           else  {  // if shift-mouse-down and neither this or parent selected, select this
+           else {
                // children are auto-deselected by selection manager when parent is selected
-               selman.addToSelection({ feature: feat, track: this }, true);
+               this.selectionManager.addToSelection({feature: feature, track: this}, true);
            }
        }
-       else if (event.altKey) {
-       }
-       else if (event.ctrlKey) {
-       }
-       else if (event.metaKey) {
-       }
-       else  {  // no shift modifier
-           if (already_selected)  {  // if this selected, do nothing (this remains selected)
+       else  {
+           if (!already_selected)  {
+               this.selectionManager.clearSelection();
+               this.selectionManager.addToSelection({track: this, feature: feature});
+               event.stopPropagation();
            }
-           else  {
-               if (parent_selected)  {
-                   // if this not selected but parent selected, do nothing (parent remains selected)
-                   //    event will propagate up (since parent_selected), so draggable check
-                   //    will be done in bubbled parent event
-               }
-               else  {  // if this not selected and parent not selected, select this
-                   selman.clearSelection();
-                   selman.addToSelection({ track: this, feature: feat});
-               }
-           }
+       }
+
+       // Stop event propogation if parent is not already selected so parent
+       // feature doesn't react to mouse-click.
+       if (!parent_selected)  {
+           event.stopPropagation();
        }
     },
 
@@ -788,17 +764,72 @@ var draggableTrack = declare( HTMLFeatureTrack,
                 // append drag ghost to featdiv block's equivalent block in annotation track if present, 
                 //     else  append to equivalent block in sequence track if present, 
                 //     else append to featdiv's block 
-                var ablock = ( atrack ? atrack.getEquivalentBlock(fblock) : fblock);
+                var ablock = (atrack ? atrack.getEquivalentBlock(fblock) : fblock);
+                var multifeature_draggable_helper = function () {
+                    // var $featdiv_copy = $featdiv.clone();
+                    var $pfeatdiv;
+                    // get top-level feature (assumes one or two-level feature hierarchy)
+                    if (featdiv.subfeature) {
+                        $pfeatdiv = $(featdiv.parentNode);
+                    }
+                    else  {
+                        $pfeatdiv = $(featdiv);
+                    }
+                    var $holder = $pfeatdiv.clone();
+                    $holder.removeClass();
+                    // just want the shell of the top-level feature, so remove children
+                    //      (selected children will be added back in below)
+                    $holder.empty();
+                    $holder.addClass("multifeature-draggable-helper");
+                    var holder = $holder[0];
+                    // var featdiv_copy = $featdiv_copy[0];
+
+                    var foffset = $pfeatdiv.offset();
+                    var fheight = $pfeatdiv.height();
+                    var fwidth = $pfeatdiv.width();
+                    var ftop = foffset.top;
+                    var fleft = foffset.left;
+                    var selection = ftrack.selectionManager.getSelection();
+                    var selength = selection.length;
+                    for (var i=0; i<selength; i++)  {
+                        var srec = selection[i];
+                        var strack = srec.track;
+                        var sfeat = srec.feature;
+                        var sfeatdiv = strack.getFeatDiv( sfeat );
+                        if (sfeatdiv)  {
+                            var $sfeatdiv = $(sfeatdiv);
+                            var $divclone = $sfeatdiv.clone();
+                            var soffset = $sfeatdiv.offset();
+                            var sheight = $sfeatdiv.height();
+                            var swidth =$sfeatdiv.width();
+                            var seltop = soffset.top;
+                            var sleft = soffset.left;
+                            $divclone.width(swidth);
+                            $divclone.height(sheight);
+                            var delta_top = seltop - ftop;
+                            var delta_left = sleft - fleft;
+                            //  setting left and top by pixel, based on delta relative to moused-on feature
+                            //    tried using $divclone.position( { ...., "offset": delta_left + " " + delta_top } );,
+                            //    but position() not working for negative deltas? (ends up using absolute value)
+                            //    so doing more directly with "left and "top" css calls
+                            $divclone.css("left", delta_left);
+                            $divclone.css("top", delta_top);
+                            var divclone = $divclone[0];
+                            holder.appendChild(divclone);
+                        }
+                    }
+                    return holder;
+                }
 
                 $featdiv.draggable({ // draggable() adds "ui-draggable" class to div
                         zIndex:  200,
-                        helper:  'clone',
+                        helper:  multifeature_draggable_helper,
                         appendTo:ablock.domNode,
                         opacity: 0.5,
                         axis:    'y',
                         revert:  function (valid) {
                             valid_drop = !!valid;
-                            return !valid;
+                            return;
                         },
                         stop: function (event, ui) {
                             if (valid_drop) {
