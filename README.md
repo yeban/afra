@@ -110,3 +110,7 @@ Yannick Wurm ([yannick.poulet.org](http://yannick.poulet.org)) [@yannick__](//tw
 License
 -------
 Afra is licensed under the [Apache 2.0](https://raw.github.com/yeban/afra/master/LICENSE.txt) license.
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/bmpvieira/afra/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
