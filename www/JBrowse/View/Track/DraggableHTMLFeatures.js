@@ -39,15 +39,15 @@ var draggableTrack = declare( HTMLFeatureTrack,
             dojo.clone( this.inherited(arguments) ),
             {
                 events: {
-                    // need to map click to a null-op, to override default JBrowse click behavior for click on features 
+                    // need to map click to a null-op, to override default JBrowse click behavior for click on features
                     //     (JBrowse default is feature detail popup)
                     click:     function(event) {
                         // not quite a null-op, also need to suprress propagation of click recursively up through parent divs,
                         //    in order to stop default JBrowse behavior for click on tracks (which is to recenter view at click point)
                         event.stopPropagation();
                     }
-                    // WebApollo can't set up mousedown --> onFeatureMouseDown() in config.events, 
-                    //     because dojo.on used by JBrowse config-based event setup doesn't play nice with 
+                    // WebApollo can't set up mousedown --> onFeatureMouseDown() in config.events,
+                    //     because dojo.on used by JBrowse config-based event setup doesn't play nice with
                     //     JQuery event retriggering via _mousedown() for feature drag bootstrapping
                     // also, JBrowse only sets these events for features, and WebApollo needs them to trigger for subfeatures as well
                     // , mousedown: dojo.hitch( this, 'onFeatureMouseDown' ),
@@ -240,7 +240,7 @@ var draggableTrack = declare( HTMLFeatureTrack,
     /**
      *  overriding renderFeature to add event handling for mouseover, mousedown, mouseup
      */
-    renderFeature: function(feature, uniqueId, block, scale, labelScale, descriptionScale, 
+    renderFeature: function(feature, uniqueId, block, scale, labelScale, descriptionScale,
                             containerStart, containerEnd) {
         var featdiv = this.inherited( arguments );
         if (featdiv)  {  // just in case featDiv doesn't actually get created
@@ -288,15 +288,15 @@ var draggableTrack = declare( HTMLFeatureTrack,
         else if ( as > bs ) { return 1; }
         else if ( as < bs ) { return -1; }
         else  { return 0; /* shouldn't fall through to here */ }
-    }, 
+    },
 
 
     /**
-     *  if feature has translated region (CDS, wholeCDS, start_codon, ???), 
-     *  reworks feature's subfeatures for more annotation-editing-friendly selection 
+     *  if feature has translated region (CDS, wholeCDS, start_codon, ???),
+     *  reworks feature's subfeatures for more annotation-editing-friendly selection
      *
      *  Assumes:
-     *      if translated, will either have 
+     *      if translated, will either have
      *           CDS-ish term for each coding segment
      *           wholeCDS from start of translation to end of translation (so already pre-processed)
      *           mutually exclusive (either have CDS, or wholeCDS, but not both)
@@ -308,7 +308,7 @@ var draggableTrack = declare( HTMLFeatureTrack,
 
         var feat_type = feature.get('type');
 
-        // most very dense genomic feature tracks do not have CDS.  Trying to minimize overhead for that case -- 
+        // most very dense genomic feature tracks do not have CDS.  Trying to minimize overhead for that case --
         //    keep list of types that NEVER have CDS children (match, alignment, repeat, etc.)
         //    (WARNING in this case not sorting, but sorting (currently) only needed for features with CDS (for reading frame calcs))
         if (SeqOnto.neverHasCDS[feat_type])  {
@@ -318,15 +318,15 @@ var draggableTrack = declare( HTMLFeatureTrack,
         var subfeats = feature.get('subfeatures');
 
         // var cds = subfeats.filter( function(feat) { return feat.get('type') === 'CDS'; } );
-        var cds = subfeats.filter( function(feat) { 
+        var cds = subfeats.filter( function(feat) {
             return SeqOnto.cdsTerms[feat.get('type')];
         } );
         var wholeCDS = subfeats.filter( function(feat) { return feat.get('type') === 'wholeCDS'; } );
-        
-        // most very dense genomic feature tracks do not have CDS.  Trying to minimize overhead for that case -- 
-        //    if no CDS, no wholeCDS, consider normalized 
+
+        // most very dense genomic feature tracks do not have CDS.  Trying to minimize overhead for that case --
+        //    if no CDS, no wholeCDS, consider normalized
         //    (WARNING in this case not sorting, but sorting (currently) only needed for features with CDS (for reading frame calcs))
-        // 
+        //
         if (cds.length === 0 && wholeCDS.length === 0)  {
             feature.normalized = true;
             return;
@@ -339,24 +339,24 @@ var draggableTrack = declare( HTMLFeatureTrack,
             feature.wholeCDS = wholeCDS[0];
             newsubs = subfeats.filter( function(feat) { return feat.get('type') !== 'wholeCDS'; } );
         }
-        
+
         // if has a CDS, remove CDS from subfeats and sort exons
         else if (cds.length > 0)  {
             cds.sort(this._subfeatSorter);
             var cdsmin = cds[0].get('start');
             var cdsmax = cds[cds.length-1].get('end');
-            feature.wholeCDS = new SimpleFeature({ parent: feature, 
-                                                   data: { start: cdsmin, end: cdsmax, type: 'wholeCDS', 
-                                                           strand: feature.get('strand') } 
+            feature.wholeCDS = new SimpleFeature({ parent: feature,
+                                                   data: { start: cdsmin, end: cdsmax, type: 'wholeCDS',
+                                                           strand: feature.get('strand') }
                                                  } );
             var hasExons = false;
-            for (var i=0; i<subfeats.length; i++)  { 
-                // if (subfeats[i].get('type') === 'exon')  { hasExons = true; break; } 
-                if (SeqOnto.exonTerms[subfeats[i].get('type')])  { hasExons = true; break; } 
+            for (var i=0; i<subfeats.length; i++)  {
+                // if (subfeats[i].get('type') === 'exon')  { hasExons = true; break; }
+                if (SeqOnto.exonTerms[subfeats[i].get('type')])  { hasExons = true; break; }
             }
             if (hasExons)  {
                 // filter out UTR and CDS
-                newsubs = subfeats.filter( function(feat) { 
+                newsubs = subfeats.filter( function(feat) {
                     var ftype = feat.get('type');
                     return (! (SeqOnto.utrTerms[ftype] || SeqOnto.cdsTerms[ftype]) );
                 } );
@@ -376,7 +376,7 @@ var draggableTrack = declare( HTMLFeatureTrack,
                     var curStart = subfeat.get('start');
                     var curEnd = subfeat.get('end');
 
-                    if (SeqOnto.utrTerms[ftype] || SeqOnto.cdsTerms[ftype] ) {  
+                    if (SeqOnto.utrTerms[ftype] || SeqOnto.cdsTerms[ftype] ) {
                         if (! prevStart)  {  // first UTR/CDS, just initialize first exon
                             prevStart = subfeat.get('start');
                             prevEnd = subfeat.get('end');
@@ -388,10 +388,10 @@ var draggableTrack = declare( HTMLFeatureTrack,
                             }
                             // not abutting, create previous exon and start new one
                             else  {
-                                var exon = new SimpleFeature({ parent: feature, 
-                                                               id: feature.id() + "-exon-" + exonCount++, 
-                                                               data: { start: prevStart, end: prevEnd, type: 'exon', 
-                                                                       strand: feature.get('strand')  } 
+                                var exon = new SimpleFeature({ parent: feature,
+                                                               id: feature.id() + "-exon-" + exonCount++,
+                                                               data: { start: prevStart, end: prevEnd, type: 'exon',
+                                                                       strand: feature.get('strand')  }
                                                              } );
                                 newsubs.push(exon);
                                 prevStart = curStart;
@@ -404,23 +404,23 @@ var draggableTrack = declare( HTMLFeatureTrack,
                     }
                 }
                 // add last exon after exiting loop
-                var exon = new SimpleFeature({ parent: feature, 
-                                               id: feature.id() + "-exon-" + exonCount++, 
-                                               data: { start: prevStart, end: prevEnd, type: 'exon', 
-                                                       strand: feature.get('strand') } 
+                var exon = new SimpleFeature({ parent: feature,
+                                               id: feature.id() + "-exon-" + exonCount++,
+                                               data: { start: prevStart, end: prevEnd, type: 'exon',
+                                                       strand: feature.get('strand') }
                                              } );
                 newsubs.push(exon);
-                
+
             }
         }
         // ensure that subfeatures are sorted by ascending start (regardless of feature orientation)
         //    may want to revisit later and sort subfeatures of minus strand in descending order ??
         //       but if do this must make sure to change reading frame calcs to reflect this
-        newsubs.sort(this._subfeatSorter);  
+        newsubs.sort(this._subfeatSorter);
         feature.filteredsubs = newsubs;
         feature.normalized = true;
-    }, 
-    
+    },
+
 
     /**
      * overriding handleSubFeatures for customized handling of UTR/CDS-segment rendering within exon divs
@@ -428,7 +428,7 @@ var draggableTrack = declare( HTMLFeatureTrack,
     handleSubFeatures: function( feature, featDiv,
                                     displayStart, displayEnd, block )  {
 
-        var subfeats = feature.get('subfeatures');	
+        var subfeats = feature.get('subfeatures');
 	if (! subfeats)  { return; }
 
         if (! feature.normalized )  {
@@ -522,8 +522,8 @@ var draggableTrack = declare( HTMLFeatureTrack,
         // look for UTR and CDS subfeature class mapping from trackData
         //    if can't find, then default to parent feature class + "-UTR" or "-CDS"
         if( render ) {  // subfeatureClases defaults set in this._defaultConfig
-            UTRclass = this.config.style.subfeatureClasses["UTR"];  
-            CDSclass = this.config.style.subfeatureClasses["CDS"];  
+            UTRclass = this.config.style.subfeatureClasses["UTR"];
+            CDSclass = this.config.style.subfeatureClasses["CDS"];
         }
 
     //    if ((subEnd <= displayStart) || (subStart >= displayEnd))  { return undefined; }
@@ -700,7 +700,8 @@ var draggableTrack = declare( HTMLFeatureTrack,
         this.handleFeatureDragSetup(event);
     },
 
-   handleFeatureSelection: function( event )  {
+   handleFeatureSelection: function (event)  {
+       var track = this;
        var feature_div = (event.currentTarget || event.srcElement);
        var feature = feature_div.feature || feature_div.subfeature;
 
@@ -721,7 +722,23 @@ var draggableTrack = declare( HTMLFeatureTrack,
            }
        }
        else  {
-           if (!already_selected)  {
+           if (parent_selected) {
+               // Two options:
+               // 1. drag transcript if user initiates drag
+               // 2. select exon if user clicks
+               $(feature_div).on('mousedown', function (e) {
+                   $(feature_div).on('mouseup mousemove', function handler(e) {
+                       if (e.type === 'mouseup') {
+                           // user clicked on the exon
+                           track.selectionManager.clearSelection();
+                           track.selectionManager.addToSelection({track: track, feature: feature});
+                           e.stopPropagation();
+                       }
+                       $(feature_div).off('mouseup mousemove', handler);
+                   });
+               });
+           }
+           else if (!already_selected)  {
                this.selectionManager.clearSelection();
                this.selectionManager.addToSelection({track: this, feature: feature});
                event.stopPropagation();
@@ -761,9 +778,9 @@ var draggableTrack = declare( HTMLFeatureTrack,
                 if (! atrack) { atrack = ftrack.browser.getSequenceTrack();  }
                 var fblock = ftrack.getBlock(featdiv);
 
-                // append drag ghost to featdiv block's equivalent block in annotation track if present, 
-                //     else  append to equivalent block in sequence track if present, 
-                //     else append to featdiv's block 
+                // append drag ghost to featdiv block's equivalent block in annotation track if present,
+                //     else  append to equivalent block in sequence track if present,
+                //     else append to featdiv's block
                 var ablock = (atrack ? atrack.getEquivalentBlock(fblock) : fblock);
                 var multifeature_draggable_helper = function () {
                     // var $featdiv_copy = $featdiv.clone();
