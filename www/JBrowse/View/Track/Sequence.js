@@ -217,13 +217,13 @@ return declare( [BlockBased, ExportMixin],
             }
         }
         var charWidth = 100/blockLength+"%";
-        var showBase = this._shouldShowBase()
+        var showBase = this._shouldShowBase();
         for (var i=0; i < aaResidues.length; i++) {
             var base = document.createElement('span');
-            var aa = aaResidues.charAt(i)
+            var aa = aaResidues.charAt(i);
             base.className = 'acid' + ' acid_' + aa;
             base.style.width = charWidth;
-            base.innerHTML = showBase ? aa : '&nbsp;'
+            base.innerHTML = showBase ? aa : '&nbsp;';
             container.appendChild(base);
         }
         return container;
@@ -259,11 +259,11 @@ return declare( [BlockBased, ExportMixin],
     },
 
     _shouldShowBase: function() {
-      var ffpc = this.featureFilterParentComponent
-      var scale = ffpc.zoomLevels[ffpc.curZoom]
-      var charWidthPt = this.getCharacterMeasurements().w
-      var shouldShowBase = scale >= charWidthPt
-      return shouldShowBase
+      var ffpc = this.featureFilterParentComponent;
+      var scale = ffpc.zoomLevels[ffpc.curZoom];
+      var charWidthPt = this.getCharacterMeasurements().w;
+      var shouldShowBase = scale >= charWidthPt;
+      return shouldShowBase;
     }
   });
 });
