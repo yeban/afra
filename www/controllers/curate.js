@@ -70,7 +70,7 @@ define(['JBrowse/Browser']
                 console.log('saved submission');
             });
             // what on failure?
-        }
+        };
 
         this.done = function () {
             var task = cookie.get('task');
@@ -79,10 +79,10 @@ define(['JBrowse/Browser']
                 cookie.remove('task');
                 $('#thanks').modal();
             });
-        }
+        };
 
         $('#thanks').on('hidden.bs.modal', function () {
-            jbrowse.clear_edits()
+            jbrowse.clear_edits();
             get()
             .then(function (task) {
                 jbrowse.load(task);
