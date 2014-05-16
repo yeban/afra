@@ -23,67 +23,63 @@ define(['JBrowse/Browser']
         this.searchSeqNextDisabled = true;
 
         this.navigateToCurrentSearchSeqMatch = function() {
-          var ref = this.browser.getCurrentRefSeq();
-          var start = this.searchSeqMatches[this.currentSearchSeqMatch];
-          var location = {
-            ref: ref.name,
-            start: start,
-            end: start + this.previousSearchSequence.length
-          };
-          this.browser.navigateToLocation(location);
+            var ref = this.browser.getCurrentRefSeq();
+            var start = this.searchSeqMatches[this.currentSearchSeqMatch];
+            var location = {
+                ref: ref.name,
+                start: start,
+                end: start + this.previousSearchSequence.length
+            };
+            this.browser.navigateToLocation(location);
         };
 
 
         this.searchSequence = function(arg) {
-          var self = this;
+            var self = this;
 
-          var sameSearch = self.searchSequenceValue === self.previousSearchSequence;
-          var hasSearchMatches = this.searchSeqMatches && this.searchSeqMatches.length > 0;
+            var sameSearch = self.searchSequenceValue === self.previousSearchSequence;
+            var hasSearchMatches = this.searchSeqMatches && this.searchSeqMatches.length > 0;
 
-          if (sameSearch && hasSearchMatches) {
-            if (arg === 'previous') {
-              if (self.currentSearchSeqMatch > 0) {
-                self.currentSearchSeqMatch -= 1;
-                self.navigateToCurrentSearchSeqMatch();
-              }
+            if (sameSearch && hasSearchMatches) {
+                if (arg === 'previous' && self.currentSearchSeqMatch > 0) {
+                    self.currentSearchSeqMatch -= 1;
+                    self.navigateToCurrentSearchSeqMatch();
+                }
+                else if (arg === 'next' && self.currentSearchSeqMatch < self.searchSeqMatches.length) {
+                    self.currentSearchSeqMatch += 1;
+                    self.navigateToCurrentSearchSeqMatch();
+                }
+                self.searchSeqPrevDisabled = self.currentSearchSeqMatch <= 0;
+                self.searchSeqNextDisabled = self.currentSearchSeqMatch >= self.searchSeqMatches.length-1;
             }
-            else if (arg === 'next') {
-              if (self.currentSearchSeqMatch < self.searchSeqMatches.length) {
-                self.currentSearchSeqMatch += 1;
-                self.navigateToCurrentSearchSeqMatch();
-              }
+            else {
+                newSearch();
             }
-            self.searchSeqPrevDisabled = self.currentSearchSeqMatch <= 0;
-            self.searchSeqNextDisabled = self.currentSearchSeqMatch >= self.searchSeqMatches.length-1;
-          }
-          else {
-            newSearch();
-          }
 
-          function newSearch() {
-            var ref = self.browser.getCurrentRefSeq();
-            var searchRegex = new RegExp(self.searchSequenceValue, 'g');
-            var ref = self.browser.getCurrentRefSeq();
-            var featureParams = {
-              ref: ref.name,
-              start: ref.start,
-              end: ref.end
-            };
-            self.browser.getSequenceTrack().store.getFeatures(featureParams, gotFeature);
-            function gotFeature(feature) {
-              var seq = feature.get('seq');
-              var matches = [];
-              while ( (match = searchRegex.exec(seq)) ) {
-                matches.push(match.index);
-              }
-              self.previousSearchSequence = self.searchSequenceValue;
-              self.searchSeqMatches = matches;
-              self.currentSearchSeqMatch = -1;
-              if (matches.length > 0) {
-                self.searchSequence('next');
-              }
+            function newSearch() {
+                var ref = self.browser.getCurrentRefSeq();
+                var searchRegex = new RegExp(self.searchSequenceValue, 'g');
+                var ref = self.browser.getCurrentRefSeq();
+                var featureParams = {
+                    ref: ref.name,
+                    start: ref.start,
+                    end: ref.end
+                };
+                self.browser.getSequenceTrack().store.getFeatures(featureParams, gotFeature);
+                function gotFeature(feature) {
+                    var seq = feature.get('seq');
+                    var matches = [];
+                    while ( (match = searchRegex.exec(seq)) ) {
+                        matches.push(match.index);
+                    }
+                    self.previousSearchSequence = self.searchSequenceValue;
+                    self.searchSeqMatches = matches;
+                    self.currentSearchSeqMatch = -1;
+                    if (matches.length > 0) {
+                        self.searchSequence('next');
+                    }
+                }
             }
-          }
         };
 
         this.sidebar_visible = true;

@@ -1,4 +1,6 @@
 {
+  "indent": 4,       // This option enforces specific tab width for your code.
+  "smarttabs": true, // This option suppresses warnings about mixed tabs and spaces when the latter are used for alignmnent only.
   "asi": false,      // Tolerate Automatic Semicolon Insertion (no semicolons).
   "browser": true,   // Standard browser globals e.g. `window`, `document`.
   "dojo": true,      // Enable globals exposed by Dojo Toolkit.
