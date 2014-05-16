@@ -134,7 +134,7 @@ return declare( [BlockBased, ExportMixin],
 
         // and the reverse strand
         if (this.config.showReverseStrand) {
-            var comp = this._renderSeqDiv(Util.complement(blockResidues));
+            var comp = this._renderSeqDiv(Util.complement(blockResidues), true);
             comp.className = 'revcom';
             seqNode.appendChild( comp );
         }
@@ -165,13 +165,27 @@ return declare( [BlockBased, ExportMixin],
      * makes a div containing the sequence.
      * @private
      */
-    _renderSeqDiv: function (seq) {
+    _renderSeqDiv: function (seq, reverse) {
         var container = document.createElement('div');
         var charWidth = 100/seq.length+"%";
         var showBase = this._shouldShowBase();
+        var startHighlightBase = this.browser.searchSeqMatches[this.browser.currentSearchSeqMatch]
+        var stopHighlightBase = startHighlightBase + this.browser.currentSearchSequence.length
         for( var i=0; i < seq.length; i++ ) {
             var base = document.createElement('span');
-            base.className = 'base';
+            var searchMatches = this.browser.searchSeqMatches
+            var basePos = this.browser.currentBasePosition
+            if (!reverse) {
+              var highlightBase = startHighlightBase <= basePos && basePos < stopHighlightBase
+              base.id = 'base' + this.browser.currentBasePosition
+              this.browser.currentBasePosition += 1
+            }
+            if (highlightBase) {
+              base.className = 'base highlight';
+            }
+            else {
+              base.className = 'base';
+            }
             base.style.width = charWidth;
             base.innerHTML = showBase ? seq.charAt(i) : '&nbsp;';
             container.appendChild(base);
