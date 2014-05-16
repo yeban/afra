@@ -58,7 +58,7 @@ return declare( [BlockBased, ExportMixin],
         var charSize = this.getCharacterMeasurements();
 
         // if we are zoomed in far enough to draw bases, then draw them
-        if (scale >= charSize.w) {
+        if (scale >= 2) {
             this.show();
             this.store.getFeatures({
                 ref: this.refSeq.name,
@@ -134,7 +134,7 @@ return declare( [BlockBased, ExportMixin],
 
         // and the reverse strand
         if (this.config.showReverseStrand) {
-            var comp = this._renderSeqDiv(Util.complement(blockResidues));
+            var comp = this._renderSeqDiv(Util.complement(blockResidues), true);
             comp.className = 'revcom';
             seqNode.appendChild( comp );
         }
@@ -165,14 +165,29 @@ return declare( [BlockBased, ExportMixin],
      * makes a div containing the sequence.
      * @private
      */
-    _renderSeqDiv: function (seq) {
+    _renderSeqDiv: function (seq, reverse) {
         var container = document.createElement('div');
         var charWidth = 100/seq.length+"%";
+        var showBase = this._shouldShowBase();
+        var startHighlightBase = this.browser.searchSeqMatches[this.browser.currentSearchSeqMatch]
+        var stopHighlightBase = startHighlightBase + this.browser.currentSearchSequence.length
         for( var i=0; i < seq.length; i++ ) {
             var base = document.createElement('span');
-            base.className = 'base';
+            var searchMatches = this.browser.searchSeqMatches
+            var basePos = this.browser.currentBasePosition
+            if (!reverse) {
+              var highlightBase = startHighlightBase <= basePos && basePos < stopHighlightBase
+              base.id = 'base' + this.browser.currentBasePosition
+              this.browser.currentBasePosition += 1
+            }
+            if (highlightBase) {
+              base.className = 'base highlight';
+            }
+            else {
+              base.className = 'base';
+            }
             base.style.width = charWidth;
-            base.innerHTML = seq.charAt(i);
+            base.innerHTML = showBase ? seq.charAt(i) : '&nbsp;';
             container.appendChild(base);
         }
         return container;
@@ -216,11 +231,13 @@ return declare( [BlockBased, ExportMixin],
             }
         }
         var charWidth = 100/blockLength+"%";
+        var showBase = this._shouldShowBase();
         for (var i=0; i < aaResidues.length; i++) {
             var base = document.createElement('span');
-            base.className = 'acid';
+            var aa = aaResidues.charAt(i);
+            base.className = 'acid' + ' acid_' + aa;
             base.style.width = charWidth;
-            base.innerHTML = aaResidues.charAt(i);
+            base.innerHTML = showBase ? aa : '&nbsp;';
             container.appendChild(base);
         }
         return container;
@@ -253,6 +270,14 @@ return declare( [BlockBased, ExportMixin],
         };
         containerElement.removeChild(widthTest);
         return result;
-  }
-});
+    },
+
+    _shouldShowBase: function() {
+      var ffpc = this.featureFilterParentComponent;
+      var scale = ffpc.zoomLevels[ffpc.curZoom];
+      var charWidthPt = this.getCharacterMeasurements().w;
+      var shouldShowBase = scale >= charWidthPt;
+      return shouldShowBase;
+    }
+  });
 });

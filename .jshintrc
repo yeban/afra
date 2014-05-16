@@ -1,0 +1,12 @@
+{
+  "indent": 4,       // This option enforces specific tab width for your code.
+  "smarttabs": true, // This option suppresses warnings about mixed tabs and spaces when the latter are used for alignmnent only.
+  "asi": false,      // Tolerate Automatic Semicolon Insertion (no semicolons).
+  "browser": true,   // Standard browser globals e.g. `window`, `document`.
+  "dojo": true,      // Enable globals exposed by Dojo Toolkit.
+  "jquery": true,    // Enable globals exposed by jQuery JavaScript library.
+  "node": true,      // Enable globals available when code is running inside of the NodeJS runtime environment.
+  "shadow": true,    // This option suppresses warnings about variable shadowing i.e. declaring a variable that had been already declared somewhere in the outer scope.
+  "laxcomma": true,  // This option suppresses warnings about comma-first coding style.
+  "laxbreak": true   // This option suppresses most of the warnings about possibly unsafe line breakings in your code.
+}

@@ -1,7 +1,7 @@
 <div class="navbar navbar-inverse navbar-fixed-top">
   <section class="container-full">
     <div class="row">
-      <div class="col-md-9">
+      <div class="col-md-4">
         <a href="about" class="navbar-brand">Afra</a>
         <span class="navbar-brand-attribution">
           by
@@ -10,7 +10,22 @@
           Funded by <a href="http://www.bbsrc.ac.uk/home/home.aspx" target="_blank">BBSRC</a>.
         </span>
       </div>
-      <div class="col-md-3">
+      <form class="col-md-6">
+        <div class="navbar-form" role="search">
+          <div class="form-group col-md-7">
+            <input ng-model="currentSearchSequence" type="text" class="form-control" placeholder="Search sequence, e.g., ATGACGT...">
+          </div>
+          <div class="col-md-5">
+              <button ng-click="searchSequence()" id="search-seq" type="button" class="btn btn-default"><i class="fa fa-lg fa-search"></i></button>
+            <div class="btn-group">
+              <button ng-click="searchSequence('previous')" id="search-seq-prev" type="button" class="btn btn-default" ng-class="{'disabled': searchSeqPrevDisabled}"><i class="fa fa-lg fa-angle-left"></i></button>
+              <button ng-click="searchSequence('next')" id="search-seq-next" type="button" class="btn btn-default" ng-class="{'disabled': searchSeqNextDisabled}"><i class="fa fa-lg fa-angle-right"></i></button>
+            </div>
+            <span id="search-seq-matches" ng-show="searchSeqMatches" class="badge">{{currentSearchSeqMatch >= 0 ? currentSearchSeqMatch + 1 : ''}}/{{searchSeqMatches.length}}</span>
+          </div>
+        </div>
+      </form>
+      <div class="col-md-2">
         <ul
           id="user-links"
           ng-show="user.name"
