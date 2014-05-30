@@ -79,6 +79,11 @@ require.config({
         main:     'jdataview'
     },
     {
+        name:     'lazyload',
+        location: 'lib/lazyload',
+        main:     'lazyload'
+    },
+    {
         name:     'jqueryui',
         location: 'lib/jquery.ui/jqueryui'
     }],

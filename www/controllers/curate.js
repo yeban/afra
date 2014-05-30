@@ -1,5 +1,5 @@
-define(['JBrowse/Browser']
-, function (Browser) {
+define(['JBrowse/Browser', 'JBrowse/plugins/RegexSequenceSearch/js/main']
+, function (Browser, RegexSequenceSearch) {
 
     var config = {
         containerID: 'genome',
@@ -19,6 +19,10 @@ define(['JBrowse/Browser']
 
     return ['$http', '$q', '$cookieStore', function (http, q, cookie) {
         this.browser = new Browser(config);
+
+        this.searchSequence = function(arg) {
+            new RegexSequenceSearch(this).createSearchTrack();
+        };
 
         this.sidebar_visible = true;
         this.toggle_sidebar  = function () {

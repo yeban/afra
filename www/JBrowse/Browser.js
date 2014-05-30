@@ -33,7 +33,8 @@ define( [
             'JBrowse/View/Track/Sequence',
             'JBrowse/View/Track/EditTrack',
             'JBrowse/FeatureEdgeMatchManager',
-            'JBrowse/FeatureSelectionManager'
+            'JBrowse/FeatureSelectionManager',
+            'lazyload' // for dynamic CSS loading
         ],
         function(
             declare,
@@ -68,7 +69,8 @@ define( [
             SequenceTrack,
             EditTrack,
             FeatureEdgeMatchManager,
-            FeatureSelectionManager
+            FeatureSelectionManager,
+            LazyLoad
         ) {
 
 
@@ -155,12 +157,16 @@ constructor: function(params) {
                 thisB.setHighlight(new Location(thisB.config.initialHighlight));
 
             thisB.loadNames();
-            thisB.initTrackMetadata();
-            thisB.loadRefSeqs().then(function() {
-                thisB.initView().then(function() {
-                    Touch.loadTouch(); // init touch device support
-                    thisB.passMilestone('completely initialized', {success: true});
+            thisB.initPlugins().then( function() {
+                // thisB.loadUserCSS().then( function() {
+                thisB.initTrackMetadata();
+                thisB.loadRefSeqs().then( function() {
+                    thisB.initView().then(function() {
+                        Touch.loadTouch(); // init touch device support
+                        thisB.passMilestone('completely initialized', {success: true});
+                    });
                 });
+                // });
             });
         });
     });
@@ -172,6 +178,136 @@ version: function() {
     var BUILD_SYSTEM_JBROWSE_VERSION;
     return BUILD_SYSTEM_JBROWSE_VERSION || 'development';
 }.call(),
+
+/**
+ * Get a plugin, if it is present.  Note that, if plugin
+ * initialization is not yet complete, it may be a while before the
+ * callback is called.
+ *
+ * Callback is called with one parameter, the desired plugin object,
+ * or undefined if it does not exist.
+ */
+getPlugin: function( name, callback ) {
+    this.afterMilestone( 'initPlugins', dojo.hitch( this, function() {
+        callback( this.plugins[name] );
+    }));
+},
+
+_corePlugins: function() {
+    return [ 'RegexSequenceSearch' ];
+},
+
+/**
+ * Load and instantiate any plugins defined in the configuration.
+ */
+initPlugins: function() {
+    return this._milestoneFunction( 'initPlugins', function( deferred ) {
+        this.plugins = {};
+
+        var plugins = this.config.plugins || this.config.Plugins || {};
+
+        // coerce plugins to array of objects
+        if( ! lang.isArray(plugins) && ! plugins.name ) {
+            // plugins like  { Foo: {...}, Bar: {...} }
+            plugins = function() {
+                var newplugins = [];
+                for( var pname in plugins ) {
+                    if( !( 'name' in plugins[pname] ) ) {
+                        plugins[pname].name = pname;
+                    }
+                    newplugins.push( plugins[pname] );
+                }
+                return newplugins;
+            }.call(this);
+        }
+        if( ! lang.isArray( plugins ) )
+            plugins = [ plugins ];
+
+        plugins.unshift.apply( plugins, this._corePlugins() );
+
+        // coerce string plugin names to {name: 'Name'}
+        plugins = array.map( plugins, function( p ) {
+            return typeof p == 'object' ? p : { 'name': p };
+        });
+
+        if( ! plugins ) {
+            deferred.resolve({success: true});
+            return;
+        }
+
+        // set default locations for each plugin
+        array.forEach( plugins, function(p) {
+            if( !( 'location' in p ))
+                p.location = 'JBrowse/plugins/'+p.name;
+
+            var resolved = this.resolveUrl( p.location );
+
+            // figure out js path
+            if( !( 'js' in p ))
+                p.js = p.location+"/js"; //URL resolution for this is taken care of by the JS loader
+            if( p.js.charAt(0) != '/' && ! /^https?:/i.test( p.js ) )
+                p.js = '../'+p.js;
+
+            // figure out css path
+            if( !( 'css' in p ))
+                p.css = resolved+"/css";
+        },this);
+
+        var pluginDeferreds = array.map( plugins, function(p) {
+            return new Deferred();
+        });
+
+        // fire the "all plugins done" deferred when all of the plugins are done loading
+        (new DeferredList( pluginDeferreds ))
+            .then( function() { deferred.resolve({success: true}); });
+
+
+        require( {
+                     packages: array.map( plugins, function(p) {
+                                              return {
+                                                  name: p.name,
+                                                  location: p.js
+                                              };
+                                          }, this )
+                 },
+                 array.map( plugins, function(p) { return p.name; } ),
+                 dojo.hitch( this, function() {
+                     array.forEach( arguments, function( pluginClass, i ) {
+                             var plugin = plugins[i];
+                             var thisPluginDone = pluginDeferreds[i];
+                             if( typeof pluginClass == 'string' ) {
+                                 console.error("could not load plugin "+plugin.name+": "+pluginClass);
+                             } else {
+                                 // make the plugin's arguments out of
+                                 // its little obj in 'plugins', and
+                                 // also anything in the top-level
+                                 // conf under its plugin name
+                                 var args = dojo.mixin(
+                                     dojo.clone( plugins[i] ),
+                                     { config: this.config[ plugin.name ]||{} });
+                                 args.browser = this;
+                                 args = dojo.mixin( args, { browser: this } );
+
+                                 // load its css
+                                 var cssLoaded = this._loadCSS(
+                                     { url: plugin.css+'/main.css' }
+                                 );
+                                 cssLoaded.then( function() {
+                                     thisPluginDone.resolve({success:true});
+                                 });
+
+                                 // give the plugin access to the CSS
+                                 // promise so it can know when its
+                                 // CSS is ready
+                                 args.cssLoaded = cssLoaded;
+
+                                 // instantiate the plugin
+                                 this.plugins[ plugin.name ] = new pluginClass( args );
+                             }
+                         }, this );
+                  }));
+    });
+},
 
 /**
  * Resolve a URL relative to the browserRoot.
@@ -209,6 +345,25 @@ loadRefSeqs: function() {
  * Event that fires when the reference sequences have been loaded.
  */
 onRefSeqsLoaded: function() {
+},
+
+_loadCSS: function( css ) {
+    var deferred = new Deferred();
+    if( typeof css == 'string' ) {
+        // if it has '{' in it, it probably is not a URL, but is a string of CSS statements
+        if( css.indexOf('{') > -1 ) {
+            dojo.create('style', { "data-from": 'JBrowse Config', type: 'text/css', innerHTML: css }, document.head );
+            deferred.resolve(true);
+        }
+        // otherwise, it must be a URL
+        else {
+            css = { url: css };
+        }
+    }
+    if( typeof css == 'object' ) {
+        LazyLoad.css( css.url, function() { deferred.resolve(true); } );
+    }
+    return deferred;
 },
 
 /**
@@ -446,7 +601,8 @@ getTrackTypes: function() {
                 'JBrowse/Store/SeqFeature/BigWig'     : 'JBrowse/View/Track/Wiggle/XYPlot',
                 'JBrowse/Store/Sequence/StaticChunked': 'JBrowse/View/Track/Sequence',
                 'JBrowse/Store/SeqFeature/VCFTabix'   : 'JBrowse/View/Track/HTMLVariants',
-                'JBrowse/Store/SeqFeature/GFF3'       : 'JBrowse/View/Track/CanvasFeatures'
+                'JBrowse/Store/SeqFeature/GFF3'       : 'JBrowse/View/Track/CanvasFeatures',
+                'RegexSequenceSearch/Store/SeqFeature/RegexSearch': 'JBrowse/View/Track/CanvasFeatures'
             },
 
             knownTrackTypes: [
@@ -1765,6 +1921,22 @@ scrollToPreviousEdge: function(event) {
             }
         }
     }
+},
+
+addStoreConfig: function( /**String*/ name, /**Object*/ storeConfig ) {
+    name = name || 'addStore'+this.uniqCounter++;
+
+    if( ! this.config.stores )
+        this.config.stores = {};
+    if( ! this._storeCache )
+        this._storeCache = {};
+
+    if( this.config.stores[name] || this._storeCache[name] ) {
+        throw "store "+name+" already exists!";
+    }
+
+    this.config.stores[name] = storeConfig;
+    return name;
 }
 
 });
