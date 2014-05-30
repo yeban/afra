@@ -473,8 +473,6 @@ return declare( [Component,DetailsMixin,FeatureFiltererMixin,Destroyable],
 
     _showBlock: function(blockIndex, startBase, endBase, scale,
                          containerStart, containerEnd) {
-        this.browser.currentStartBasePosition = startBase
-        this.browser.currentBasePosition = startBase
         if ( this.empty || this.fatalError ) {
             this.heightUpdate( this.labelHeight );
             return;

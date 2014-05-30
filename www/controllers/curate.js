@@ -19,69 +19,6 @@ define(['JBrowse/Browser']
 
     return ['$http', '$q', '$cookieStore', function (http, q, cookie) {
         this.browser = new Browser(config);
-        this.searchSeqPrevDisabled = true;
-        this.searchSeqNextDisabled = true;
-
-        this.navigateToCurrentSearchSeqMatch = function() {
-            var ref = this.browser.getCurrentRefSeq();
-            var start = this.browser.searchSeqMatches[this.browser.currentSearchSeqMatch];
-            var location = {
-                ref: ref.name,
-                start: start,
-                end: start + this.previousSearchSequence.length
-            };
-            this.browser.navigateToLocation(location);
-        };
-
-
-        this.searchSequence = function(arg) {
-            var self = this;
-            self.browser.currentSearchSequence = self.currentSearchSequence;
-
-            var sameSearch = self.currentSearchSequence === self.previousSearchSequence;
-            var hasSearchMatches = this.browser.searchSeqMatches && this.browser.searchSeqMatches.length > 0;
-
-            if (sameSearch && hasSearchMatches) {
-                if (arg === 'previous' && self.browser.currentSearchSeqMatch > 0) {
-                    self.browser.currentSearchSeqMatch -= 1;
-                    self.navigateToCurrentSearchSeqMatch();
-                }
-                else if (arg === 'next' && self.browser.currentSearchSeqMatch < self.browser.searchSeqMatches.length) {
-                    self.browser.currentSearchSeqMatch += 1;
-                    self.navigateToCurrentSearchSeqMatch();
-                }
-                self.searchSeqPrevDisabled = self.browser.currentSearchSeqMatch <= 0;
-                self.searchSeqNextDisabled = self.browser.currentSearchSeqMatch >= self.browser.searchSeqMatches.length-1;
-            }
-            else {
-                newSearch();
-            }
-
-            function newSearch() {
-                var ref = self.browser.getCurrentRefSeq();
-                var searchRegex = new RegExp(self.currentSearchSequence, 'g');
-                var ref = self.browser.getCurrentRefSeq();
-                var featureParams = {
-                    ref: ref.name,
-                    start: ref.start,
-                    end: ref.end
-                };
-                self.browser.getSequenceTrack().store.getFeatures(featureParams, gotFeature);
-                function gotFeature(feature) {
-                    var seq = feature.get('seq');
-                    var matches = [];
-                    while ( (match = searchRegex.exec(seq)) ) {
-                        matches.push(match.index);
-                    }
-                    self.previousSearchSequence = self.currentSearchSequence;
-                    self.browser.searchSeqMatches = matches;
-                    self.browser.currentSearchSeqMatch = -1;
-                    if (matches.length > 0) {
-                        self.searchSequence('next');
-                    }
-                }
-            }
-        };
 
         this.sidebar_visible = true;
         this.toggle_sidebar  = function () {
