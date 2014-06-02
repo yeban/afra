@@ -3,6 +3,9 @@
 ### ... is under construction
 
 ![at work](http://www.highdefdiscnews.com/screenshots/a_bugs_life_1.png)
+ Photo courtesy: http://www.highdefdiscnews.com/
+
+
 
 ### ... development notes
 
@@ -10,8 +13,11 @@ https://github.com/yeban/afra/wiki
 
 ---
 
-<p align="center">
-Photo courtesy: http://www.highdefdiscnews.com/
-<br/>
+
 Afra is copyright (©) 2013 Queen Mary, University of London. All rights reserved.
-</p>
+
+
+Parts of the code are forked from or inspired by [jBrowse][1] and [WebApollo][2] and thus goverened by their respective licenses and copyrights (e.g. to http://berkeleybop.org) . 
+
+[1]: http://jbrowse.org
+[2]: http://genomearchitect.org
