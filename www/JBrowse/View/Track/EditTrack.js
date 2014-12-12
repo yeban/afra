@@ -581,7 +581,7 @@ var EditTrack = declare(DraggableFeatureTrack,
             if (translationStart > newTranscript.get('end')) {
                 translationStart = newTranscript.get('end');
             }
-            newTranscript = this.setORF(refSeq, newTranscript, translationStart);
+            newTranscript = this.setORF(refSeq, newTranscript, translationStart, CodonTable.STOP_CODONS);
         }
         return newTranscript;
     },
@@ -614,7 +614,7 @@ var EditTrack = declare(DraggableFeatureTrack,
         var newTranscript    = this.createTranscript(exons);
         var translationStart = this.getTranslationStart(transcript);
         if (translationStart) {
-            newTranscript = this.setORF(refSeq, newTranscript, translationStart);
+            newTranscript = this.setORF(refSeq, newTranscript, translationStart, CodonTable.STOP_CODONS);
         }
         newTranscript.set('name', transcript.get('name'));
         return newTranscript;
@@ -683,7 +683,7 @@ var EditTrack = declare(DraggableFeatureTrack,
             if (translationStart > newTranscript.get('end')) {
                 translationStart = newTranscript.get('end');
             }
-            newTranscript = this.setORF(refSeq, newTranscript, translationStart);
+            newTranscript = this.setORF(refSeq, newTranscript, translationStart, CodonTable.STOP_CODONS);
         }
         return newTranscript;
     },
@@ -729,7 +729,7 @@ var EditTrack = declare(DraggableFeatureTrack,
         }, this));
 
         var newTranscript  = this.createTranscript(exons);
-        newTranscript = this.setORF(refSeq, newTranscript, translationStart);
+        newTranscript = this.setORF(refSeq, newTranscript, translationStart, CodonTable.STOP_CODONS);
         newTranscript.set('name', 'afra-' + newTranscript.get('seq_id') + '-mRNA-' + counter++);
         return newTranscript;
     },
@@ -777,7 +777,7 @@ var EditTrack = declare(DraggableFeatureTrack,
      */
     setTranslationStart: function (refSeq, transcript, coordinate) {
         coordinate = Math.round(coordinate);
-        return this.setORF(refSeq, transcript, coordinate);
+        return this.setORF(refSeq, transcript, coordinate, CodonTable.STOP_CODONS);
     },
 
     /**
@@ -842,7 +842,7 @@ var EditTrack = declare(DraggableFeatureTrack,
      * the end of transcript such that length of reading frame is a multiple of
      * 3.
      */
-    setORF: function (refSeq, transcript, orfStart) {
+    setORF: function (refSeq, transcript, orfStart, stopCodons) {
         orfStart = orfStart || this.getTranslationStart(transcript);
         if (!orfStart) { return; }
 
@@ -853,7 +853,7 @@ var EditTrack = declare(DraggableFeatureTrack,
         readingFrame  = cdna.slice(orfStart);
         var stopCodon = !_.every(readingFrame.match(/.../g), function (codon) {
             orfStop += 3;
-            if (CodonTable.STOP_CODONS.indexOf(codon) !== -1) {
+            if (stopCodons.indexOf(codon) !== -1) {
                 return false;
             }
             return true;
