@@ -807,7 +807,7 @@ var EditTrack = declare(DraggableFeatureTrack,
         cdna = cdna.toLowerCase();
 
         var orfStart, orfStop, longestORF = 0;
-        var startIndex = cdna.indexOf(CodonTable.START_CODON);
+        var startIndex = cdna.indexOf(CodonTable.START_CODON[0]);
         while (startIndex >= 0) {
             var runningORF   = 0;
             var readingFrame = cdna.slice(startIndex);
@@ -824,7 +824,7 @@ var EditTrack = declare(DraggableFeatureTrack,
                 orfStop    = orfStart + runningORF;
                 longestORF = runningORF;
             }
-            startIndex = cdna.indexOf(CodonTable.START_CODON, startIndex + 1);
+            startIndex = cdna.indexOf(CodonTable.START_CODON[0], startIndex + 1);
         }
 
         if (longestORF) {
@@ -1549,7 +1549,7 @@ var EditTrack = declare(DraggableFeatureTrack,
 
         var startCodon = this.getStartCodon(transcript, refSeq);
         var translationStart = this.getTranslationStart(transcript);
-        if (startCodon && translationStart && (startCodon.toLowerCase() !== CodonTable.START_CODON)) {
+        if (startCodon && translationStart && (startCodon.toLowerCase() !== CodonTable.START_CODON[0])) {
             subfeatures.push(new SimpleFeature({
                 data: {
                     start: translationStart,

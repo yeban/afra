@@ -100,7 +100,7 @@ for (var codon in CodonTable) {
     }
 }
 
-tempCodonTable.START_CODON = 'atg';
+tempCodonTable.START_CODON = ['atg'];
 tempCodonTable.STOP_CODONS = ['tga', 'tag', 'taa'];
 
 return tempCodonTable;
