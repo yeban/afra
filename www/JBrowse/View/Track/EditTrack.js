@@ -579,6 +579,10 @@ var EditTrack = declare(DraggableFeatureTrack,
      * part of the given transcript, or if the given exon is not really an exon.
      */
     resizeExon: function (refSeq, transcript, exonToResize, left, right) {
+        console.log("****");
+        console.log(typeof(refSeq));
+        console.log(refSeq);
+        console.log("****");
         if (exonToResize.parent() !== transcript ||
             exonToResize.get('type') !== 'exon') {
             return;
