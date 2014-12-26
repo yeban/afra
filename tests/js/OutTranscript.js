@@ -1,8 +1,10 @@
 define([
-        'JBrowse/Model/SimpleFeature'
+        'JBrowse/Model/SimpleFeature',
+        'JBrowse/Util/ImportFeature',
+        'JBrowse/Util/ExportFeature'
         ],
-        function (SimpleFeature) {
-    var transcript_data = {
+        function (SimpleFeature, importFeature, exportFeature) {
+    var feature = {
     "_uniqueID": "SimpleFeature_2",
     "data": {
         "end": 21389,
@@ -14,32 +16,12 @@ define([
             {
                 "_uniqueID": "SimpleFeature_2_3",
                 "data": {
-                    "end": 17116,
+                    "end": 17120,
                     "name": "Si_estOR100817isotig20471",
                     "seq_id": "Si_gnF.scaffold02797",
                     "start": 16946,
                     "strand": 1,
                     "type": "exon"
-                }
-            },
-            {
-                "_uniqueID": "SimpleFeature_2_317",
-                "data": {
-                    "end": 17116,
-                    "seq_id": "Si_gnF.scaffold02797",
-                    "start": 17116,
-                    "strand": 1,
-                    "type": "non_canonical_splice_site"
-                }
-            },
-            {
-                "_uniqueID": "SimpleFeature_2_318",
-                "data": {
-                    "end": 19075,
-                    "seq_id": "Si_gnF.scaffold02797",
-                    "start": 19075,
-                    "strand": 1,
-                    "type": "non_canonical_splice_site"
                 }
             },
             {
@@ -92,4 +74,5 @@ define([
     "normalized": true
 };
 
-return new SimpleFeature(transcript_data);});
+var transcript = importFeature(feature);
+return transcript;});
