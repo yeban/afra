@@ -2,8 +2,10 @@ define(['underscore',
         'dojo/_base/declare',
         'JBrowse/Store/SeqFeature',
         'JBrowse/Model/SimpleFeature',
-        'JBrowse/Store/Stack']
-, function(_, declare, SeqFeature, SimpleFeature, Stack) {
+        'JBrowse/Store/Stack',
+        'JBrowse/Util/ImportFeature',
+        'JBrowse/Util/ExportFeature']
+, function(_, declare, SeqFeature, SimpleFeature, Stack, importFeature, exportFeature) {
 
     return declare(SeqFeature, {
 
@@ -57,27 +59,7 @@ define(['underscore',
         // retreived objects are different.
         _parseLocalStorage: function () {
             var localFeatures = JSON.parse(localStorage.getItem('features'));
-            // Directly constructing a transcript out of parsed JSON data
-            // results in a duplicated level of nesting inside array of
-            // SimpleFeature objects.
-            //
-            // To avoid that, we:
-            // * save the subfeatures array data from the parsed data,
-            // * generate the full transcript and delete the incorrect portion,
-            // * generate SimpleFeature objects from saved array and insert
-            //   them back into the transcript,
-            // * return the corrected transcript.
-            var localFeatures = _.map(localFeatures, function (feature) {
-                var subfeatures = feature.data.subfeatures;
-                delete feature.data.subfeatures;
-                var transcript = new SimpleFeature(feature);
-                subfeatures = _.map(subfeatures, function (f) {
-                    f.parent = transcript;
-                    return new SimpleFeature(f);
-                });
-                transcript.set('subfeatures', subfeatures);
-                return transcript;
-            });
+            var localFeatures = _.map(localFeatures, exportFeature);
             return localFeatures;
         },
 
@@ -87,10 +69,7 @@ define(['underscore',
         // We avoid that by replacing _parent values using a custom
         // replacer function.
         _updateLocalStorage: function () {
-            var features = JSON.stringify(this.features, function (key, value) {
-                if (key === '_parent' && value) return;
-                return value;
-            });
+            var features = importFeature(this.features);
             localStorage.setItem('features', features);
         },
 
