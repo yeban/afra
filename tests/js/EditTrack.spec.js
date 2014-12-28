@@ -5,16 +5,17 @@ define([
         'JBrowse/Util/FeatureEquality',
         '../tests/js/RefSeq',
         '../tests/js/OutTranscript',
+        '../tests/js/OutTranscriptMerge',
         '../tests/js/InTranscript'
         ], function (Browser,
             DraggableHTMLFeatures,
             FeatureSelectionManager,
             compareFeatures,
             refSeq,
-            expectedOutTranscript,
+            expectedTranscript,
+            expectedTranscriptMerge,
             inTranscript
             ) {
-
 
 describe( "Edit Track", function() {
 
@@ -32,10 +33,6 @@ describe( "Edit Track", function() {
     beforeEach(function(done) {
         setTimeout(function () {
             editTrack = jbrowse.getEditTrack();
-            window.editTrack = editTrack;
-            window.inTranscript = inTranscript;
-            window.expectedOutTranscript = expectedOutTranscript;
-            window.compareFeatures = compareFeatures;
             done();
         }, 1000);
     });
@@ -43,18 +40,26 @@ describe( "Edit Track", function() {
     it( 'constructs', function() {
         expect(editTrack).toBeTruthy();
         expect(inTranscript).toBeDefined();
-        expect(expectedOutTranscript).toBeDefined();
+        expect(expectedTranscript).toBeDefined();
+        expect(expectedTranscriptMerge).toBeDefined();
         expect(compareFeatures).toBeDefined();
         expect(refSeq).toBeDefined();
     });
 
-    it( 'resizeExon', function() {
+    it( 'resizeExon no merge no change in translation start of stop', function() {
         exon = editTrack.filterExons(inTranscript)[0];
         var right = 17120;
         var left = exon.get('start');
         outTranscript = editTrack.resizeExon(refSeq, inTranscript, exon, left, right);
-        window.outTranscript = outTranscript;
-        expect(compareFeatures(expectedOutTranscript, outTranscript)).toBe(true);
+        expect(compareFeatures(expectedTranscript, outTranscript)).toBe(true);
+    });
+
+    it( 'resizeExon merging no change in translation start of stop', function() {
+        exon = editTrack.filterExons(inTranscript)[0];
+        var right = 19080;
+        var left = exon.get('start');
+        outTranscript = editTrack.resizeExon(refSeq, inTranscript, exon, left, right);
+        expect(compareFeatures(expectedTranscriptMerge, outTranscript)).toBe(true);
     });
 });
 });
