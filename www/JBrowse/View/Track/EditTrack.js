@@ -13,6 +13,7 @@ define([
             'JBrowse/CodonTable',
             'FileSaver/FileSaver',
             'JBrowse/Store/Stack',
+            'JBrowse/Util/SortAnnotationsByLocation',
             'bionode'
         ],
         function(declare,
@@ -29,6 +30,7 @@ define([
                  CodonTable,
                  saveAs,
                  Stack,
+                 sortAnnotationsByLocation,
                  Bionode) {
 
 var counter = 1;
@@ -493,7 +495,7 @@ var EditTrack = declare(DraggableFeatureTrack,
      * Only two features can be compare at a time.
      */
     areFeaturesOverlapping: function (feature1, feature2) {
-        var features = this.sortAnnotationsByLocation([feature1, feature2]);
+        var features = sortAnnotationsByLocation([feature1, feature2]);
         var f1 = features[0];
         var f2 = features[1];
         if (f2.get('start') - f1.get('end') < 1) {
@@ -590,7 +592,7 @@ var EditTrack = declare(DraggableFeatureTrack,
         if (left !== right) {
             _exons.push(this.copyFeature(exonToResize, {start: left, end: right}));
         }
-        _exons = this.sortAnnotationsByLocation(_exons);
+        _exons = sortAnnotationsByLocation(_exons);
         _.each(_exons, _.bind(function (f) {
             var last = exons[exons.length - 1];
             if (last && (f.get('start') - last.get('end') <= 1)) {
@@ -746,7 +748,7 @@ var EditTrack = declare(DraggableFeatureTrack,
         _.each(transcripts, _.bind(function (transcript) {
             exons = exons.concat(this.filterExons(transcript));
         }, this));
-        exons = this.sortAnnotationsByLocation(exons);
+        exons = sortAnnotationsByLocation(exons);
         _.each(exons, _.bind(function (f) {
             var last = exons[exons.length - 1];
             if (last && (f.get('start') - last.get('end') <= 1)) { // we are looking for introns
@@ -958,7 +960,7 @@ var EditTrack = declare(DraggableFeatureTrack,
             return this.normalizeFeature(this.createTranscript(subfeatures), track);
         }
 
-        var subfeatures = this.sortAnnotationsByLocation(feature.get('subfeatures'))
+        var subfeatures = sortAnnotationsByLocation(feature.get('subfeatures'))
             , data      = [];
 
         _.each(subfeatures, function (f) {
@@ -1198,7 +1200,7 @@ var EditTrack = declare(DraggableFeatureTrack,
         var transcript = EditTrack.getTopLevelAnnotation(feature);
         var fmin = feature.get('start');
         var fmax = feature.get('end');
-        var subfeatures = this.sortAnnotationsByLocation(transcript.get('subfeatures'));
+        var subfeatures = sortAnnotationsByLocation(transcript.get('subfeatures'));
 
         var cDNACoordinates = [];
         _.each(subfeatures, _.bind(function (f) {
@@ -1220,7 +1222,7 @@ var EditTrack = declare(DraggableFeatureTrack,
         var transcript = EditTrack.getTopLevelAnnotation(feature);
         var fmin = feature.get('start');
         var fmax = feature.get('end');
-        var subfeatures = this.sortAnnotationsByLocation(transcript.get('subfeatures'));
+        var subfeatures = sortAnnotationsByLocation(transcript.get('subfeatures'));
 
         var cdsCoordinates = [];
         _.each(subfeatures, _.bind(function (f) {
@@ -1582,7 +1584,7 @@ var EditTrack = declare(DraggableFeatureTrack,
                 parent: transcript
             }));
         }
-        this.sortAnnotationsByLocation(subfeatures);
+        sortAnnotationsByLocation(subfeatures);
         transcript.set('subfeatures', subfeatures);
         return transcript;
     },
@@ -1606,7 +1608,7 @@ var EditTrack = declare(DraggableFeatureTrack,
                 parent: transcript
             }));
         }
-        this.sortAnnotationsByLocation(subfeatures);
+        sortAnnotationsByLocation(subfeatures);
         transcript.set('subfeatures', subfeatures);
         return transcript;
     },
@@ -1633,7 +1635,7 @@ var EditTrack = declare(DraggableFeatureTrack,
                 parent: transcript
             }));
         }
-        this.sortAnnotationsByLocation(subfeatures);
+        sortAnnotationsByLocation(subfeatures);
         transcript.set('subfeatures', subfeatures);
         return transcript;
     },
