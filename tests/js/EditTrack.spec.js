@@ -1,20 +1,21 @@
 define([
+        'underscore',
+        'jquery',
         'JBrowse/Browser',
         'JBrowse/View/Track/DraggableHTMLFeatures',
         'JBrowse/FeatureSelectionManager',
         'JBrowse/Util/FeatureEquality',
-        '../tests/js/RefSeq',
-        '../tests/js/OutTranscript',
-        '../tests/js/OutTranscriptMerge',
-        '../tests/js/InTranscript'
-        ], function (Browser,
+        '../tests/data/RefSeq',
+        '../tests/data/transcripts/transcript_data'
+        ], function (
+            _,
+            $,
+            Browser,
             DraggableHTMLFeatures,
             FeatureSelectionManager,
             compareFeatures,
             refSeq,
-            expectedTranscript,
-            expectedTranscriptMerge,
-            inTranscript
+            transcript_data
             ) {
 
 describe( "Edit Track", function() {
@@ -29,6 +30,7 @@ describe( "Edit Track", function() {
 
     var editTrack;
     var input_refSeq;
+    var x;
 
     beforeEach(function(done) {
         setTimeout(function () {
@@ -39,27 +41,25 @@ describe( "Edit Track", function() {
 
     it( 'constructs', function() {
         expect(editTrack).toBeTruthy();
-        expect(inTranscript).toBeDefined();
-        expect(expectedTranscript).toBeDefined();
-        expect(expectedTranscriptMerge).toBeDefined();
         expect(compareFeatures).toBeDefined();
         expect(refSeq).toBeDefined();
+        expect(transcript_data).toBeDefined();
     });
 
     it( 'resizeExon no merge no change in translation start of stop', function() {
-        exon = editTrack.filterExons(inTranscript)[0];
+        exon = editTrack.filterExons(transcript_data["input"][0])[0];
         var right = 17120;
         var left = exon.get('start');
-        outTranscript = editTrack.resizeExon(refSeq, inTranscript, exon, left, right);
-        expect(compareFeatures(expectedTranscript, outTranscript)).toBe(true);
+        outTranscript = editTrack.resizeExon(refSeq, transcript_data["input"][0], exon, left, right);
+        expect(compareFeatures(transcript_data["resize"][0], outTranscript)).toBe(true);
     });
 
     it( 'resizeExon merging no change in translation start of stop', function() {
-        exon = editTrack.filterExons(inTranscript)[0];
+        exon = editTrack.filterExons(transcript_data["input"][0])[0];
         var right = 19080;
         var left = exon.get('start');
-        outTranscript = editTrack.resizeExon(refSeq, inTranscript, exon, left, right);
-        expect(compareFeatures(expectedTranscriptMerge, outTranscript)).toBe(true);
+        outTranscript = editTrack.resizeExon(refSeq, transcript_data["input"][0], exon, left, right);
+        expect(compareFeatures(transcript_data["resize"][1], outTranscript)).toBe(true);
     });
 });
 });
