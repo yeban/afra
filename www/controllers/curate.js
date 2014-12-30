@@ -1,4 +1,4 @@
-define(['JBrowse/Browser']
+define(['JBrowse/Browser', 'jquery.onunload']
 , function (Browser) {
 
     var config = {
@@ -10,6 +10,10 @@ define(['JBrowse/Browser']
 
     return ['$q', '$http', '$location', function (q, http, location) {
         this.sidebar_visible = true;
+
+        // parameter denotes whether done button is working properly
+        $.confirmDialog();
+
         this.toggle_sidebar  = function () {
             this.sidebar_visible = !this.sidebar_visible;
             var thisB = this.browser;
@@ -63,13 +67,13 @@ define(['JBrowse/Browser']
             var data = {
                 type:  'correction',
                 value: normalizeFeatures(transcripts)
-            }
+            };
             return http.post('data/tasks/' + id, data).then(function (response) {
                 localStorage.clear();
                 console.log('saved submission');
             });
             // what on failure?
-        }
+        };
 
         this.done = function () {
             put(this.browser.config.id, this.edits())
@@ -91,6 +95,9 @@ define(['JBrowse/Browser']
         };
 
         this.go_back_to_dashboard = function () {
+            // don't show prompt on dashboard
+            $.removeDialog();
+
             var scope = this;
             var handler = function () {
                 scope.$apply(function () {
@@ -99,7 +106,7 @@ define(['JBrowse/Browser']
                 $(this).off('hidden.bs.modal', handler);
             };
             $('#thanks').modal('hide').on('hidden.bs.modal', handler);
-        }
+        };
 
         // initialize
         get().then(function (task) {
