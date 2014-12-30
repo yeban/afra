@@ -64,6 +64,9 @@ describe( "Edit Track", function() {
         var left = exon.get('start');
         outTranscript = editTrack.resizeExon(refSeq, transcript_data["input"][1], exon, left, right);
         expect(compareFeatures(transcript_data["resize"][2], outTranscript)).toBe(true);
+    it ('test getWholeCDSCoordinates', function() {
+        expect(editTrack.getWholeCDSCoordinates(transcript_data.input[0])).toEqual([undefined, undefined]);
+        expect(editTrack.getWholeCDSCoordinates(transcript_data.input[1])).toEqual([19977, 18796]);
     });
 
     it( 'resizeExon merging no change in translation start of stop', function() {
