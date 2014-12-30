@@ -24,7 +24,7 @@ function (SimpleFeature, importFeature, exportFeature) {
                 "data": {
                     "end": 19210,
                     "seq_id": "Si_gnF.scaffold02797",
-                    "start": 18796,
+                    "start": 19071, // verify that there is a stop codon at this location
                     "strand": -1,
                     "type": "CDS"
                 }

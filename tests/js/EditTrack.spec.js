@@ -49,36 +49,15 @@ describe( "Edit Track", function() {
         expect(transcript_data).toBeDefined();
     });
 
-    it ( 'test comparison function', function() {
+    it( 'tests comparison function', function() {
         expect(compareFeatures(transcript_data["input"][0], transcript_data["input"][0])).toBe(true);
     });
 
-    it( 'resizeExon no merge no change in translation start of stop', function() {
-        exon = editTrack.filterExons(transcript_data["input"][0])[0];
-        var right = 17120;
-        var left = exon.get('start');
-        outTranscript = editTrack.resizeExon(refSeq, transcript_data["input"][0], exon, left, right);
-        expect(compareFeatures(transcript_data["resize"][0], outTranscript)).toBe(true);
-
-        // Use vimdiff to see the difference between the input
-        // transcript and the expected output transcript
-        exon = editTrack.filterExons(transcript_data["input"][1])[1];
-        var right = exon.get('end') + 3;
-        var left = exon.get('start');
-        outTranscript = editTrack.resizeExon(refSeq, transcript_data["input"][1], exon, left, right);
-        expect(compareFeatures(transcript_data["resize"][2], outTranscript)).toBe(true);
-    it ('test getWholeCDSCoordinates', function() {
     it('tests getWholeCDSCoordinates', function() {
         expect(editTrack.getWholeCDSCoordinates(transcript_data.input[0])).toEqual([undefined, undefined]);
         expect(editTrack.getWholeCDSCoordinates(transcript_data.input[1])).toEqual([19977, 18796]);
     });
 
-    it( 'resizeExon merging no change in translation start of stop', function() {
-        exon = editTrack.filterExons(transcript_data["input"][0])[0];
-        var right = 19080;
-        var left = exon.get('start');
-        outTranscript = editTrack.resizeExon(refSeq, transcript_data["input"][0], exon, left, right);
-        expect(compareFeatures(transcript_data["resize"][1], outTranscript)).toBe(true);
     it('tests transcriptToCDNA', function() {
         expect(editTrack.transcriptToCDNA(transcript_data.input[3], 4)).toEqual(0);
     });
@@ -99,8 +78,46 @@ describe( "Edit Track", function() {
 
 
     it ('test setORF', function() {
-        console.log(editTrack.setORF(refSeq_2, transcript_data.input[2]));
+        expect(compareFeatures(
+                editTrack.setORF(refSeq_2, transcript_data.input[2]),
+                transcript_data.orf[0])).toBe(true);
+
+        console.log(editTrack.setORF(refSeq_2, transcript_data.input[3]));
+        expect(compareFeatures(
+                editTrack.setORF(refSeq_2, transcript_data.input[3]),
+                transcript_data.orf[1])).toBe(true);
+
     });
 
+    it( 'resizeExon no merge no change in translation start of stop', function() {
+        exon = editTrack.filterExons(transcript_data["input"][0])[0];
+        var right = 17120;
+        var left = exon.get('start');
+        outTranscript = editTrack.resizeExon(refSeq, transcript_data["input"][0], exon, left, right);
+        expect(compareFeatures(transcript_data["resize"][0], outTranscript)).toBe(true);
+
+        // Use vimdiff to see the difference between the input
+        // transcript and the expected output transcript
+        exon = editTrack.filterExons(transcript_data["input"][1])[1];
+        var right = exon.get('end') + 3;
+        var left = exon.get('start');
+        outTranscript = editTrack.resizeExon(refSeq, transcript_data["input"][1], exon, left, right);
+        expect(compareFeatures(transcript_data["resize"][2], outTranscript)).toBe(true);
+    });
+
+    it( 'resizeExon merging no change in translation start of stop', function() {
+        exon = editTrack.filterExons(transcript_data["input"][0])[0];
+        var right = 19080;
+        var left = exon.get('start');
+        outTranscript = editTrack.resizeExon(refSeq, transcript_data["input"][0], exon, left, right);
+        expect(compareFeatures(transcript_data["resize"][1], outTranscript)).toBe(true);
+
+        exon = editTrack.filterExons(transcript_data["input"][1])[0];
+        exon_ = editTrack.filterExons(transcript_data["input"][1])[1];
+        var right = exon_.get('start') + 3;
+        var left = exon.get('start');
+        outTranscript = editTrack.resizeExon(refSeq, transcript_data["input"][1], exon, left, right);
+        expect(compareFeatures(transcript_data["resize"][3], outTranscript)).toBe(true);
+    });
 });
 });
