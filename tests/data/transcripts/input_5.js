@@ -9,25 +9,17 @@ function (SimpleFeature, importFeature, exportFeature) {
     var feature = {
     "data": {
         "end": 24,
-        "start": 4,
+        "start": 1,
         "strand": 1,
         "subfeatures": [
             {
                 "data": {
                     "end": 24,
-                    "start": 4,
+                    "start": 1,
                     "strand": 1,
                     "type": "exon"
                 }
-            },
-            {
-                "data": {
-                    "end": 24,
-                    "start": 4,
-                    "strand": 1,
-                    "type": "CDS"
-                }
-            },
+            }
         ],
         "type": "transcript"
     },

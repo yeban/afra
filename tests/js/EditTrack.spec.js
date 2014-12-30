@@ -72,7 +72,6 @@ describe( "Edit Track", function() {
     });
 
     it('tests getCDS', function() {
-        console.log(editTrack.getCDS(refSeq_2, transcript_data.input[2]));
         expect(editTrack.getCDS(refSeq_2, transcript_data.input[2])).toEqual(refSeq_2);
     });
 
@@ -82,11 +81,19 @@ describe( "Edit Track", function() {
                 editTrack.setORF(refSeq_2, transcript_data.input[2]),
                 transcript_data.orf[0])).toBe(true);
 
-        console.log(editTrack.setORF(refSeq_2, transcript_data.input[3]));
         expect(compareFeatures(
                 editTrack.setORF(refSeq_2, transcript_data.input[3]),
                 transcript_data.orf[1])).toBe(true);
 
+    });
+
+    it ('tests setCDS', function() {
+        console.log("---");
+        console.log(editTrack.setCDS(transcript_data.input[4], 0, 24));
+        console.log("---");
+        expect(compareFeatures(
+                editTrack.setCDS(transcript_data.input[4], 0, 24),
+                transcript_data.cds[0])).toBe(true);
     });
 
     it( 'resizeExon no merge no change in translation start of stop', function() {
