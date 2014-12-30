@@ -6,6 +6,7 @@ define([
         'JBrowse/FeatureSelectionManager',
         'JBrowse/Util/FeatureEquality',
         '../tests/data/RefSeq',
+        '../tests/data/RefSeq_2',
         '../tests/data/transcripts/transcript_data'
         ], function (
             _,
@@ -15,6 +16,7 @@ define([
             FeatureSelectionManager,
             compareFeatures,
             refSeq,
+            refSeq_2,
             transcript_data
             ) {
 
@@ -43,6 +45,7 @@ describe( "Edit Track", function() {
         expect(editTrack).toBeTruthy();
         expect(compareFeatures).toBeDefined();
         expect(refSeq).toBeDefined();
+        expect(refSeq_2).toBeDefined();
         expect(transcript_data).toBeDefined();
     });
 
@@ -65,6 +68,7 @@ describe( "Edit Track", function() {
         outTranscript = editTrack.resizeExon(refSeq, transcript_data["input"][1], exon, left, right);
         expect(compareFeatures(transcript_data["resize"][2], outTranscript)).toBe(true);
     it ('test getWholeCDSCoordinates', function() {
+    it('tests getWholeCDSCoordinates', function() {
         expect(editTrack.getWholeCDSCoordinates(transcript_data.input[0])).toEqual([undefined, undefined]);
         expect(editTrack.getWholeCDSCoordinates(transcript_data.input[1])).toEqual([19977, 18796]);
     });
@@ -75,6 +79,28 @@ describe( "Edit Track", function() {
         var left = exon.get('start');
         outTranscript = editTrack.resizeExon(refSeq, transcript_data["input"][0], exon, left, right);
         expect(compareFeatures(transcript_data["resize"][1], outTranscript)).toBe(true);
+    it('tests transcriptToCDNA', function() {
+        expect(editTrack.transcriptToCDNA(transcript_data.input[3], 4)).toEqual(0);
     });
+
+    it('tests CDNAToTranscript', function() {
+        expect(editTrack.CDNAToTranscript(transcript_data.input[3], 0)).toEqual(4);
+    });
+
+    it('tests getCDNA', function() {
+        console.log(editTrack.getCDNA(refSeq_2, transcript_data.input[2]));
+        expect(editTrack.getCDNA(refSeq_2, transcript_data.input[2])).toEqual(refSeq_2);
+    });
+
+    it('tests getCDS', function() {
+        console.log(editTrack.getCDS(refSeq_2, transcript_data.input[2]));
+        expect(editTrack.getCDS(refSeq_2, transcript_data.input[2])).toEqual(refSeq_2);
+    });
+
+
+    it ('test setORF', function() {
+        console.log(editTrack.setORF(refSeq_2, transcript_data.input[2]));
+    });
+
 });
 });
