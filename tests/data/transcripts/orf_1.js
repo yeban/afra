@@ -8,7 +8,7 @@ function (SimpleFeature, importFeature, exportFeature) {
     // which is located in file data/RefSeq_2.js
     var feature = {
     "data": {
-        "end": 44,
+        "end": 46,
         "start": 1,
         "strand": 1,
         "subfeatures": [
@@ -22,7 +22,7 @@ function (SimpleFeature, importFeature, exportFeature) {
             },
             {
                 "data": {
-                    "end": 44,
+                    "end": 46,
                     "start": 1,
                     "strand": 1,
                     "type": "exon"

@@ -67,16 +67,17 @@ describe( "Edit Track", function() {
     });
 
     it('tests getCDNA', function() {
-        console.log(editTrack.getCDNA(refSeq_2, transcript_data.input[2]));
-        expect(editTrack.getCDNA(refSeq_2, transcript_data.input[2])).toEqual(refSeq_2);
+        expect(editTrack.getCDNA(refSeq_2, transcript_data.input[2])).toEqual(refSeq_2.slice(1));
     });
 
     it('tests getCDS', function() {
-        expect(editTrack.getCDS(refSeq_2, transcript_data.input[2])).toEqual(refSeq_2);
+        expect(editTrack.getCDS(refSeq_2, transcript_data.input[2])).toEqual(refSeq_2.slice(1));
     });
 
 
     it ('test setORF', function() {
+        // There is strong evidence that the `end` parameter of the transcript
+        // data is exclusive. Let us read the gff specification
         expect(compareFeatures(
                 editTrack.setORF(refSeq_2, transcript_data.input[2]),
                 transcript_data.orf[0])).toBe(true);
@@ -88,9 +89,6 @@ describe( "Edit Track", function() {
     });
 
     it ('tests setCDS', function() {
-        console.log("---");
-        console.log(editTrack.setCDS(transcript_data.input[4], 0, 24));
-        console.log("---");
         expect(compareFeatures(
                 editTrack.setCDS(transcript_data.input[4], 0, 24),
                 transcript_data.cds[0])).toBe(true);
