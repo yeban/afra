@@ -124,5 +124,10 @@ describe( "Edit Track", function() {
         outTranscript = editTrack.resizeExon(refSeq, transcript_data["input"][1], exon, left, right);
         expect(compareFeatures(transcript_data["resize"][3], outTranscript)).toBe(true);
     });
+
+    it( 'tests areOnSameStrand', function() {
+        expect(editTrack.areOnSameStrand([transcript_data.input[0], transcript_data.input[2]])).toBe(true);
+        expect(editTrack.areOnSameStrand([transcript_data.input[0], transcript_data.input[1]])).toBe(false);
+    });
 });
 });

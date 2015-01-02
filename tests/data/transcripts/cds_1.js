@@ -1,4 +1,3 @@
-
 define([
         'JBrowse/Model/SimpleFeature',
         'JBrowse/Util/ImportFeature',
