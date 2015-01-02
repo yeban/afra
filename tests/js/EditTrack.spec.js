@@ -7,7 +7,8 @@ define([
         'JBrowse/Util/FeatureEquality',
         '../tests/data/RefSeq',
         '../tests/data/RefSeq_2',
-        '../tests/data/transcripts/transcript_data'
+        '../tests/data/transcripts/transcript_data',
+        '../tests/data/tracks',
         ], function (
             _,
             $,
@@ -17,7 +18,8 @@ define([
             compareFeatures,
             refSeq,
             refSeq_2,
-            transcript_data
+            transcript_data,
+            track
             ) {
 
 describe( "Edit Track", function() {
@@ -47,6 +49,7 @@ describe( "Edit Track", function() {
         expect(refSeq).toBeDefined();
         expect(refSeq_2).toBeDefined();
         expect(transcript_data).toBeDefined();
+        expect(track).toBeDefined();
     });
 
     it( 'tests comparison function', function() {
@@ -129,5 +132,35 @@ describe( "Edit Track", function() {
         expect(editTrack.areOnSameStrand([transcript_data.input[0], transcript_data.input[2]])).toBe(true);
         expect(editTrack.areOnSameStrand([transcript_data.input[0], transcript_data.input[1]])).toBe(false);
     });
+
+    it( 'tests mergeTranscripts', function() {
+        expect(compareFeatures(
+                editTrack.mergeTranscripts(refSeq_2,
+                    [transcript_data.input[2], transcript_data.input[2]]),
+                transcript_data.input[2])).toBe(true);
+
+        expect(compareFeatures(
+                editTrack.mergeTranscripts(refSeq_2,
+                    [transcript_data.input[2], transcript_data.input[2], transcript_data.input[2]]),
+                transcript_data.input[2])).toBe(true);
+
+        expect(compareFeatures(
+                editTrack.mergeTranscripts(refSeq_2,
+                    [transcript_data.input[6], transcript_data.input[7]]),
+                transcript_data.input[6])).toBe(true);
+
+            expect(compareFeatures(
+                    editTrack.mergeTranscripts(refSeq_2,
+                        [transcript_data.input[4], transcript_data.input[5]]),
+                    transcript_data.merge[0])).toBe(true);
+    });
+
+    it( 'tests normalizeFeature', function() {
+        exon = editTrack.filterExons(transcript_data.input[7])[0];
+        expect(compareFeatures(
+                editTrack.normalizeFeature(exon, track),
+                transcript_data.normalize[0])).toBe(true);
+    });
+
 });
 });
