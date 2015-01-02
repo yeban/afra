@@ -13,6 +13,7 @@ define([
             'JBrowse/CodonTable',
             'FileSaver/FileSaver',
             'JBrowse/Store/Stack',
+            'JBrowse/Util/ExportFeature',
             'bionode'
         ],
         function(declare,
@@ -29,6 +30,7 @@ define([
                  CodonTable,
                  saveAs,
                  Stack,
+                 exportFeature,
                  Bionode) {
 
 var counter = 1;
@@ -748,6 +750,8 @@ var EditTrack = declare(DraggableFeatureTrack,
             exons = exons.concat(this.filterExons(transcript));
         }, this));
         exons = this.sortAnnotationsByLocation(exons);
+        exons = _.uniq(exons, function (f) {
+            return exportFeature(f);});
         _.each(exons, _.bind(function (f) {
             var last = exons[exons.length - 1];
             if (last && (f.get('start') - last.get('end') <= 1)) { // we are looking for introns

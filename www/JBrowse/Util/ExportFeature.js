@@ -4,8 +4,11 @@ define([
 function (sortAnnotationsByLocation) {
     var exportFeature = function (transcript) {
         var subfeatures = transcript.data.subfeatures;
-        subfeatures = sortAnnotationsByLocation(subfeatures);
-        transcript.set('subfeatures', subfeatures);
+        if (subfeatures !== undefined) {
+            subfeatures = sortAnnotationsByLocation(subfeatures);
+            transcript.set('subfeatures', subfeatures);
+        }
+
         return JSON.stringify(transcript, function (key, value) {
             if (((key === '_parent' || key === '_uniqueID') || ( key === 'name' || key === '__proto__')) && value) return;
             return value;
