@@ -103,7 +103,7 @@ describe( "Edit Track", function() {
     });
 
     it( 'tests comparison function', function() {
-        expect(compareFeatures(transcript_data["input"][0], transcript_data["input"][0])).toBe(true);
+        expect(compareFeatures(transcript_data.input[0], transcript_data.input[0])).toBe(true);
     });
 
     it('tests getWholeCDSCoordinates', function() {
@@ -145,17 +145,20 @@ describe( "Edit Track", function() {
     });
 
     it( 'tests resizeExon', function() {
-        exon = editTrack.filterExons(transcript_data["input"][0])[0];
-        var right = 17120;
-        var left = exon.get('start');
-        outTranscript = editTrack.resizeExon(refSeq, transcript_data["input"][0], exon, left, right);
-        expect(compareFeatures(transcript_data["resize"][0], outTranscript)).toBe(true);
+        var right, left;
 
-        exon = editTrack.filterExons(transcript_data["input"][1])[1];
-        var right = exon.get('end') + 3;
-        var left = exon.get('start');
-        outTranscript = editTrack.resizeExon(refSeq, transcript_data["input"][1], exon, left, right);
-        expect(compareFeatures(transcript_data["resize"][2], outTranscript)).toBe(true);
+        exon = editTrack.filterExons(transcript_data.input[0])[0];
+        right = 17120;
+        left = exon.get('start');
+        outTranscript = editTrack.resizeExon(refSeq, transcript_data.input[0], exon, left, right);
+        expect(compareFeatures(transcript_data.resize[0], outTranscript)).toBe(true);
+
+        exon = editTrack.filterExons(transcript_data.input[1])[1];
+        right = exon.get('end') + 3;
+        left = exon.get('start');
+        outTranscript = editTrack.resizeExon(refSeq, transcript_data.input[1], exon, left, right);
+        expect(compareFeatures(transcript_data.resize[2], outTranscript)).toBe(true);
+
     });
 
     it( 'tests areOnSameStrand', function() {
