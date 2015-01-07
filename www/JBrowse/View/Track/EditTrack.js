@@ -613,6 +613,9 @@ var EditTrack = declare(DraggableFeatureTrack,
             return;
         }
 
+        var origLeft = exonToResize.get("start");
+        var origRight = exonToResize.get("end");
+
         var _exons;
         _exons = this.filterExons(transcript);
         _exons = _.reject(_exons, function (exon) { return exon === exonToResize; });
@@ -621,7 +624,17 @@ var EditTrack = declare(DraggableFeatureTrack,
         }
 
         var translationStart = this.getTranslationStart(transcript);
-        var newTranscript    = this.createTranscript(_exons, transcript.get('name'), refSeq, translationStart);
+        var translationStop = this.getTranslationStop(transcript);
+        var strand = transcript.get("strand");
+
+        if (strand === 1) {
+            if (left >= translationStart && translationStart >= origLeft) {translationStart = left;}
+            if (right <= translationStop && translationStop <= origRight) {translationStop = right;} }
+        else {
+            if (right <= translationStart && translationStart <= origRight) {translationStart = right;}
+            if (left >= translationStop && translationStop >= origLeft)   {translationStop = left;} }
+
+        var newTranscript = this.createTranscript(_exons, transcript.get('name'), refSeq, translationStart, translationStop);
         return newTranscript;
     },
 
@@ -1102,7 +1115,9 @@ var EditTrack = declare(DraggableFeatureTrack,
             if (!_.isUndefined(translationStop)) {
                 transcript = this.setCDS(transcript, translationStart, translationStop);
             }
-            transcript = this.setORF(refSeq, transcript, translationStart);
+            else{
+                transcript = this.setORF(refSeq, transcript, translationStart);
+            }
         }
         return transcript;
     },
