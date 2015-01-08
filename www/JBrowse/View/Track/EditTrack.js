@@ -1224,6 +1224,30 @@ var EditTrack = declare(DraggableFeatureTrack,
         return cds.slice(frameEnd - 3, frameEnd);
     },
 
+    /**
+     * Returns all the splice sites in the given transcript
+     *
+     * The output format is
+     * [[[start, base_pairs], [stop, base_pairs]], [[start, base_pairs], [stop, base_pairs]], ...]
+     *
+     */
+    getSpliceSites: function (refSeq, transcript) {
+        var junctions = _.flatten(this.getCDNACoordinates(transcript, {ignoreStrand: true})).slice(1, -1);
+        var spliceCoordinates = [];
+        for (var i = 0, j = 1; j < junctions.length; i += 2, j +=2) {
+            var dc = junctions[i];
+            var ac = junctions[j];
+            var dbp = refSeq.slice(dc, dc + 2);
+            var abp = refSeq.slice(ac - 2, ac);
+            if (transcript.get('strand') === -1) {
+                dbp = Util.reverseComplement(dbp);
+                abp = Util.reverseComplement(abp);
+            }
+            spliceCoordinates.push([[dc, dbp], [ac, abp]]);
+        }
+        return spliceCoordinates;
+    },
+
     /* ------------------------------------------------------------------------
      * getXCoordinates functions below return coordinates on _refSeq_.
      * ------------------------------------------------------------------------
@@ -1313,6 +1337,10 @@ var EditTrack = declare(DraggableFeatureTrack,
         }
 
         return [cdsMin, cdsMax];
+    },
+
+    getSpliceCoordinates: function (transcript) {
+        return _.flatten(this.getCDNACoordinates(transcript)).slice(1, -1);
     },
 
     /**
@@ -1598,48 +1626,30 @@ var EditTrack = declare(DraggableFeatureTrack,
         return transcript;
     },
 
+    /*
+     * Marks splice sites with non canonical start or end.
+     * The canonical start is GT and canonical stop is AG. [1]
+     */
     markNonCanonicalSpliceSites: function (transcript, refSeq) {
-        var seq    = refSeq.slice(transcript.get('start'), transcript.get('end'));
-        var offset = transcript.get('start');
-        var cds_ranges  = [];
-
-        // remove non-canonical splice sites from before
-        var subfeatures = _.reject(transcript.get('subfeatures'), function (f) {
-            return f.get('type') === 'non_canonical_splice_site';
+        var subfeatures = transcript.get('subfeatures');
+        var spliceSites = this.getSpliceSites(refSeq, transcript);
+        nonCanonicalSpliceSites = _.filter(spliceSites, function (site) {
+            return (site[0][1] !== "GT"|| site[1][1] !== "AG");
         });
 
-        for (var i = 0; i < subfeatures.length; i++) {
-            var subfeature = subfeatures[i];
-            if (subfeature.get('type') == 'exon') {
-                cds_ranges.push([subfeature.get('start') - offset, subfeature.get('end') - offset]);
-            }
-        }
-        var strand = transcript.get('strand');
-        var nonCanonicalSpliceSites;
-        if (strand === 1) {
-            nonCanonicalSpliceSites = Bionode.findNonCanonicalSplices(seq, cds_ranges);
-        }
-        else if (strand === -1) {
-            nonCanonicalSpliceSites = Bionode.findNonCanonicalSplices(Util.reverseComplement(seq), Bionode.reverseExons(cds_ranges, seq.length));
-            for (var i = 0; i < nonCanonicalSpliceSites.length; i++)
-            nonCanonicalSpliceSites[i] = seq.length - nonCanonicalSpliceSites[i];
-        }
-        if (!nonCanonicalSpliceSites) {
-            nonCanonicalSpliceSites = [];
-        }
-        for (var i = 0; i < nonCanonicalSpliceSites.length; i++) {
-            var non_canonical_splice_site = nonCanonicalSpliceSites[i];
-            subfeatures.push(new SimpleFeature({
+        _.each(nonCanonicalSpliceSites, function (spliceSitePair) {
+            newSubFeature = new SimpleFeature({
                 data: {
-                    start: non_canonical_splice_site + offset,
-                    end:   non_canonical_splice_site + offset,
+                    start: spliceSitePair[0][0],
+                    end:   spliceSitePair[1][0],
                     type:  'non_canonical_splice_site',
                     seq_id: transcript.get('seq_id'),
                     strand: transcript.get('strand')
                 },
                 parent: transcript
-            }));
-        }
+            });
+            subfeatures.push(newSubFeature);
+        });
         this.sortAnnotationsByLocation(subfeatures);
         transcript.set('subfeatures', subfeatures);
         return transcript;
@@ -2128,6 +2138,14 @@ EditTrack.getTopLevelAnnotation = function(annotation) {
 
 return EditTrack;
 });
+
+/*
+ * REFERENCES
+ * ----------
+ *  [1]: https://en.wikipedia.org/wiki/RNA_splicing
+ *  Primary Reference: http://www.nature.com/scitable/topicpage/rna-splicing-introns-exons-and-spliceosome-12375
+ *
+ */
 
 /*
   Copyright (c) 2010-2011 Berkeley Bioinformatics Open Projects (BBOP)
