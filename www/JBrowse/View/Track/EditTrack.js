@@ -645,34 +645,34 @@ var EditTrack = declare(DraggableFeatureTrack,
             return;
         }
 
-        var _exons, exons = [];
+        var origLeft = exonToResize.get('start');
+        var origRight = exonToResize.get('end');
+        var _exons;
         _exons = this.filterExons(transcript);
         _exons = _.reject(_exons, function (exon) { return exon === exonToResize; });
         if (left !== right) {
             _exons.push(this.copyFeature(exonToResize, {start: left, end: right}));
         }
-        _exons = this.sortAnnotationsByLocation(_exons);
-        _.each(_exons, _.bind(function (f) {
-            var last = exons[exons.length - 1];
-            if (last && (f.get('start') - last.get('end') <= 1)) {
-                last.set('end', Math.max(last.get('end'), f.get('end')));
-            }
-            else {
-                exons.push(this.copyFeature(f));
-            }
-        }, this));
-
-        var newTranscript    = this.createTranscript(exons, transcript.get('name'));
         var translationStart = this.getTranslationStart(transcript);
-        if (translationStart) {
-            if (translationStart < newTranscript.get('start')) {
-                translationStart = newTranscript.get('start');
+        var translationStop = this.getTranslationStop(transcript);
+
+        var strand = transcript.get('strand');
+        if (strand === 1) {
+            if (left >= translationStart && translationStart >= origLeft) {
+                translationStart = left;
             }
-            if (translationStart > newTranscript.get('end')) {
-                translationStart = newTranscript.get('end');
+            if (right <= translationStop && translationStop <= origRight) {
+                translationStop = right;
             }
-            newTranscript = this.setORF(refSeq, newTranscript, translationStart);
+        } else {
+            if (right <= translationStart && translationStart <= origRight) {
+                translationStart = right;
+            }
+            if (left >= translationStop && translationStop >= origLeft) {
+                translationStop = left;
+            }
         }
+        var newTranscript = this.createTranscript(_exons, transcript.get('name'), refSeq, translationStart, translationStop);
         return newTranscript;
     },
 
@@ -767,17 +767,8 @@ var EditTrack = declare(DraggableFeatureTrack,
         var exons = _.reject(this.filterExons(transcript), function (exon) {
             return _.indexOf(str_exonsToDelete, JSON.stringify(exon)) !== -1;
         });
-        var newTranscript    = this.createTranscript(exons, transcript.get('name'));
         var translationStart = this.getTranslationStart(transcript);
-        if (translationStart) {
-            if (translationStart < newTranscript.get('start')) {
-                translationStart = newTranscript.get('start');
-            }
-            if (translationStart > newTranscript.get('end')) {
-                translationStart = newTranscript.get('end');
-            }
-            newTranscript = this.setORF(refSeq, newTranscript, translationStart);
-        }
+        var newTranscript = this.createTranscript(exons, transcript.get('name'), translationStart);
         return newTranscript;
     },
 
@@ -817,24 +808,8 @@ var EditTrack = declare(DraggableFeatureTrack,
             exons = exons.concat(this.filterExons(transcript));
         }, this));
         exons = this.sortAnnotationsByLocation(exons);
-
-        // Combine partially or fully overlapping, and immediately adjacent
-        // exons into one.
-        var newexons = [];
-        _.each(exons, _.bind(function (f) {
-            var last = newexons[newexons.length - 1];
-            if (last && (f.get('start') - last.get('end') <= 1)) { // we are looking for introns
-                newexons[newexons.length - 1] = this.copyFeature(last, {end: Math.max(last.get('end'), f.get('end'))});
-            }
-            else {
-                newexons.push(f);
-            }
-        }, this));
-
-        // Create new transcript from the processed exons, and insert CDS.
-        var newTranscript = this.createTranscript(newexons);
-        newTranscript = this.setORF(refSeq, newTranscript, translationStart);
-        newTranscript.set('name', 'afra-' + newTranscript.get('seq_id') + '-mRNA-' + counter++);
+        var name = 'afra-' + exons[0].get('seq_id') + '-mRNA-' + counter++;
+        var newTranscript = this.createTranscript(exons, name, refSeq, translationStart);
         return newTranscript;
     },
 
@@ -1104,17 +1079,45 @@ var EditTrack = declare(DraggableFeatureTrack,
         return transcript;
     },
 
-    createTranscript: function (subfeatures, name) {
+    /*
+     * Create Transcript from the given subfeatures
+     *
+     * createTranscripts also combines partially or fully overlapping exons. If
+     * translation start is not specified then all the non exonic subfeatures
+     * remain intact. 'setORF' of 'setCDS' is called on the created simplefeature
+     * depending on if translationStart and translationStop are specified.
+     *
+     * If only translationStart is given then 'setORF' is called. And if both 
+     * translationStart and translationStop is given then 'setCDS' is called.
+     */
+    createTranscript: function(subfeatures, name, refSeq, translationStart, translationStop) {
         // maintain a count of subfeatures seen, indexed by type
         var count = {};
+
+        var exons = _.filter(subfeatures, function(f) { return f.get('type') === 'exon'; });
+        exons = this.sortAnnotationsByLocation(exons);
+
+        var newexons = [];
+        _.each(exons, _.bind(function (f) {
+            var last = newexons[newexons.length - 1];
+            if (last && (f.get('start') - last.get('end') <= 0)) {
+                newexons[newexons.length - 1] = this.copyFeature(last, {end: Math.max(last.get('end'), f.get('end'))});
+            } else {
+                newexons.push(f);
+            }
+        }, this));
+
+        var nonExons = _.filter(subfeatures, function (f) { return f.get('type') !== 'exon'; });
+        var newSubFeatures = nonExons.concat(newexons);
+        newSubFeatures = this.sortAnnotationsByLocation(newSubFeatures);
 
         var transcript = new SimpleFeature({
             data: {
                 type:   'transcript',
                 name:   name,
-                seq_id: subfeatures[0].get('seq_id'),
-                strand: subfeatures[0].get('strand'),
-                subfeatures: _.map(subfeatures, function (f) {
+                seq_id: newSubFeatures[0].get('seq_id'),
+                strand: newSubFeatures[0].get('strand'),
+                subfeatures: _.map(newSubFeatures, function (f) {
                     var type = f.get('type');
                     count[type] = count[type] || 1;
                     return {'data': {
@@ -1134,6 +1137,24 @@ var EditTrack = declare(DraggableFeatureTrack,
         var fmax = _.max(_.map(subfeatures, function (f) { return f.get('end');   }));
         transcript.set('start', fmin);
         transcript.set('end',   fmax);
+
+        if (translationStart) {
+            if (translationStart < fmin) {
+                translationStart = fmin;
+            }
+            if (translationStart > fmax) {
+                translationStart = fmax;
+            }
+        }
+
+        if (!_.isUndefined(translationStart) && !_.isUndefined(refSeq)) {
+            if (!_.isUndefined(translationStop)) {
+                transcript = this.setCDS(transcript, translationStart, translationStop);
+            }
+            else {
+                transcript = this.setORF(refSeq, transcript, translationStart);
+            }
+        }
         return transcript;
     },
 

@@ -103,7 +103,7 @@ describe( "Edit Track", function() {
     });
 
     it( 'tests comparison function', function() {
-        expect(compareFeatures(transcript_data["input"][0], transcript_data["input"][0])).toBe(true);
+        expect(compareFeatures(transcript_data.input[0], transcript_data.input[0])).toBe(true);
     });
 
     it('tests getWholeCDSCoordinates', function() {
@@ -203,25 +203,37 @@ describe( "Edit Track", function() {
         expect(compareFeatures(
                 editTrack.setCDS(transcript_data.input[4], 0, 24),
                 transcript_data.cds[0])).toBe(true);
+
+        var start = editTrack.getTranslationStart(transcript_data.input[1]);
+        var stop = editTrack.getTranslationStop(transcript_data.input[1]);
+        var outTranscript = editTrack.setCDS(transcript_data.input[1], start, stop);
+        expect(compareFeatures(outTranscript, transcript_data.input[1])).toBe(true);
     });
 
     it( 'tests resizeExon', function() {
-        exon = editTrack.filterExons(transcript_data["input"][0])[0];
-        var right = 17120;
-        var left = exon.get('start');
-        outTranscript = editTrack.resizeExon(refSeq, transcript_data["input"][0], exon, left, right);
-        expect(compareFeatures(transcript_data["resize"][0], outTranscript)).toBe(true);
+        var right, left;
+        exon = editTrack.filterExons(transcript_data.input[0])[0];
+        right = 17120;
+        left = exon.get('start');
+        outTranscript = editTrack.resizeExon(refSeq, transcript_data.input[0], exon, left, right);
+        expect(compareFeatures(transcript_data.resize[0], outTranscript)).toBe(true);
 
-        exon = editTrack.filterExons(transcript_data["input"][1])[1];
-        var right = exon.get('end') + 3;
-        var left = exon.get('start');
-        outTranscript = editTrack.resizeExon(refSeq, transcript_data["input"][1], exon, left, right);
-        expect(compareFeatures(transcript_data["resize"][2], outTranscript)).toBe(true);
+        exon = editTrack.filterExons(transcript_data.input[1])[1];
+        right = exon.get('end') + 3;
+        left = exon.get('start');
+        outTranscript = editTrack.resizeExon(refSeq, transcript_data.input[1], exon, left, right);
+        expect(compareFeatures(transcript_data.resize[2], outTranscript)).toBe(true);
+
+        exon = editTrack.filterExons(transcript_data.input[11])[1];
+        right = exon.get('end');
+        left = exon.get('start') + 3;
+        outTranscript = editTrack.resizeExon(refSeq, transcript_data.input[11], exon, left, right);
+        expect(compareFeatures(transcript_data.resize[4], outTranscript)).toBe(true);
 
         // check for the translation start changes
         exon = editTrack.filterExons(transcript_data.input[1])[0];
-        var right = exon.get('end');
-        var left = exon.get('start') - 3;
+        right = exon.get('end');
+        left = exon.get('start') - 3;
         outTranscript = editTrack.resizeExon(refSeq, transcript_data.input[1], exon, left, right);
         // Verify if CDS is correct
         expect(editTrack.getCDS(refSeq, outTranscript)).toEqual(transcript_data.cds[1]);
